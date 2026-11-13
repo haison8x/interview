@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ASP.NET Core Interview – 30 Questions</title>
+    <style>
+      body {
+        font-family:
+          Segoe UI,
+          system-ui,
+          sans-serif;
+        line-height: 1.6;
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 24px 16px 80px;
+        color: #222;
+        background: #fff;
+      }
+      h1 {
+        font-size: 1.6em;
+      }
+      h2 {
+        margin-top: 2.2em;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 4px;
+      }
+      h3 {
+        margin-top: 1.8em;
+        margin-bottom: 0.3em;
+      }
+      code {
+        font-family: Consolas, monospace;
+        background: #f3f3f3;
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 0.92em;
+      }
+      pre {
+        background: #f5f5f5;
+        padding: 12px;
+        overflow-x: auto;
+        border-radius: 4px;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+      }
+      .intro {
+        color: #555;
+      }
+      nav ol {
+        padding-left: 20px;
+      }
+      nav a {
+        color: #0b5cad;
+        text-decoration: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          color: #ddd;
+          background: #1b1b1b;
+        }
+        h2 {
+          border-color: #444;
+        }
+        code,
+        pre {
+          background: #2a2a2a;
+        }
+        .intro {
+          color: #aaa;
+        }
+        nav a {
+          color: #6db3ff;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ASP.NET Core Interview – 30 Questions</h1>
+
+    <!-- ================================================================ -->
+    <h2 id="s1">1. Hosting, Startup, and the Host</h2>
+    <p class="intro">
+      This is where the interview usually opens – not to trick you, but to see
+      whether you know what your own Program.cs actually does.
+    </p>
+
+    <h3>
+      Q1. Walk me through what happens between CreateBuilder and app.Run()
+    </h3>
+    <p>
+      Program.cs has two distinct phases, and the line
+      <code>builder.Build()</code> is the boundary. Before it, you're
+      configuring services: <code>WebApplication.CreateBuilder(args)</code> sets
+      up configuration, logging, and the DI container, and you add your
+      registrations to <code>builder.Services</code>.
+      <code>builder.Build()</code> then locks that container and produces the
+      <code>WebApplication</code>. After it, you're building the request
+      pipeline: each <code>app.UseSomething()</code> appends middleware, and
+      <code>app.Run()</code> starts Kestrel and blocks until shutdown.
+    </p>
+    <p>
+      The reason this matters: the two phases can't be interleaved. You can't
+      register a service after <code>Build()</code>, and you can't add
+      middleware before it. Knowing the boundary explains half the "why doesn't
+      this work" bugs juniors hit.
+    </p>
+
+    <h3>Q2. Why does registering a service after builder.Build() throw?</h3>
+    <p>
+      Because <code>Build()</code> finalizes the service collection into an
+      immutable service provider. Up to that point
+      <code>builder.Services</code> is a mutable
+      <code>IServiceCollection</code> – just a list of descriptors.
+      <code>Build()</code> reads that list, validates it, and produces the root
+      <code>IServiceProvider</code> that will resolve everything for the app's
+      lifetime. Mutating registrations after the container is built would mean
+      some consumers see a service and others don't, depending on timing, so the
+      framework forbids it.
+    </p>
+    <p>
+      Practical takeaway: everything that needs to be injectable has to be
+      registered before <code>Build()</code>. If you want to add a service
+      later, that's usually a sign you need a factory or an options-configured
+      registration instead.
+    </p>
+
+    <h3>
+      Q3. Kestrel, IIS, and reverse proxies – how is your app actually served?
+    </h3>
+    <p>
+      Kestrel is the built-in, cross-platform HTTP server that actually runs
+      your ASP.NET Core app – it owns the sockets and turns raw HTTP into an
+      <code>HttpContext</code>. It can run as an edge server facing the internet
+      directly, or behind a reverse proxy like IIS, Nginx, or YARP that handles
+      TLS termination, load balancing, and static content.
+    </p>
+    <p>
+      The detail interviewers want: behind a proxy, the proxy talks to Kestrel
+      over localhost, and you need <code>UseForwardedHeaders</code> so the app
+      sees the real client IP and scheme instead of the proxy's. On Windows/IIS,
+      the ASP.NET Core Module forwards requests into Kestrel – IIS isn't running
+      your app, it's fronting Kestrel. Getting this wrong is why "HTTP
+      internally but HTTPS externally" redirect loops happen.
+    </p>
+
+    <h3>
+      Q4. What is the Generic Host, and why does a web app use the same host as
+      a Worker Service?
+    </h3>
+    <p>
+      The Host is the object that owns your app's lifetime: the DI container,
+      configuration, logging, and the set of <code>IHostedService</code>s that
+      start and stop with the app. <code>WebApplication</code> is built on this
+      same generic host – a web app is just a host that also runs Kestrel and a
+      request pipeline. A Worker Service uses the identical host without the web
+      server.
+    </p>
+    <p>
+      Why it matters: everything you know about DI, configuration, and hosted
+      services transfers directly between a web API and a background worker.
+      <code>BackgroundService</code>, options binding, logging – all host
+      features, not web features.
+    </p>
+
+    <!-- ================================================================ -->
+    <h2 id="s2">2. The Middleware Pipeline</h2>
+    <p class="intro">
+      The single most reliable ASP.NET Core topic in any interview. Expect to
+      explain order, and expect at least one "why is this broken" scenario.
+    </p>
+
+    <h3>
+      Q5. What is middleware, and how does the pipeline execute a request?
+    </h3>
+    <p>
+      Middleware is a component in the request pipeline that gets a
+      <code>RequestDelegate</code> pointing at the next component. Each one runs
+      some logic, then decides whether to call <code>next()</code> to pass
+      control down the chain – or to short-circuit and return. On the way back,
+      execution unwinds in reverse, so code after <code>await next()</code> runs
+      as the response bubbles up. That's the onion model.
+    </p>
+    <pre><code>app.Use(async (context, next) =&gt;
+{
+    // runs on the way IN
+    await next(context);
+    // runs on the way OUT (response is coming back up)
+});</code></pre>
+
+    <h3>
+      Q6. Give me the correct middleware order, and explain why it matters
+    </h3>
+    <p>Order is behavior, not style. A typical correct sequence:</p>
+    <ol>
+      <li>Exception handler (wraps everything below)</li>
+      <li>HSTS, HTTPS redirection</li>
+      <li>Static files</li>
+      <li><code>UseRouting</code></li>
+      <li><code>UseCors</code></li>
+      <li><code>UseAuthentication</code></li>
+      <li><code>UseAuthorization</code></li>
+      <li>Endpoints</li>
+    </ol>
+    <p>
+      The reasoning is what they're grading: authentication before authorization
+      because you can't decide what a user may do until you know who they are.
+      Routing before auth so the framework knows which endpoint – and which auth
+      requirements – apply. CORS before auth so preflight OPTIONS requests get
+      their headers before anything rejects them. Classic bug: CORS after auth →
+      "missing CORS header" errors that look like a framework fault but are pure
+      ordering.
+    </p>
+
+    <h3>Q7. Difference between Use, Run, and Map?</h3>
+    <ul>
+      <li>
+        <b>Use</b> – adds middleware that can call <code>next</code> (the normal
+        case).
+      </li>
+      <li>
+        <b>Run</b> – terminal middleware, never calls <code>next</code>; ends
+        the pipeline.
+      </li>
+      <li>
+        <b>Map</b> – branches the pipeline by request path into a separate
+        sub-pipeline.
+      </li>
+    </ul>
+    <pre><code>app.Map("/health", branch =&gt;
+    branch.Run(async ctx =&gt; await ctx.Response.WriteAsync("OK")));</code></pre>
+    <p>
+      Point to land: if you accidentally put a <code>Run</code> in the middle of
+      your pipeline, everything after it silently never runs.
+    </p>
+
+    <h3>
+      Q8. How do you short-circuit the pipeline, and what's the bug when you
+      write to the response after next()?
+    </h3>
+    <p>
+      Short-circuit by not calling <code>next()</code> – write a response (or
+      set a status code) and return. That's how auth middleware rejects with a
+      401 without running the endpoint.
+    </p>
+    <p>
+      The bug: once downstream middleware has started writing the body, headers
+      are already sent. Setting a status code or header in the unwind phase
+      after <code>await next()</code> throws
+      <code>InvalidOperationException: response has already started</code>.
+      Response-mutating logic must happen before <code>next</code> (or via
+      <code>OnStarting</code>), or you must buffer the response.
+    </p>
+    <pre><code>app.Use(async (context, next) =&gt;
+{
+    // Safe: set headers BEFORE next writes the body
+    context.Response.OnStarting(() =&gt;
+    {
+        context.Response.Headers["X-Trace-Id"] = trace;
+        return Task.CompletedTask;
+    });
+    await next(context);
+    // Unsafe here: context.Response.StatusCode = 500; // headers already sent
+});</code></pre>
+
+    <h3>
+      Q9. Where does exception-handling middleware go, and what changed in .NET
+      10?
+    </h3>
+    <p>
+      First, or close to it – middleware only catches exceptions from components
+      registered after it. Put <code>UseExceptionHandler</code> (or your
+      <code>IExceptionHandler</code> pipeline) at the top so it wraps the entire
+      request.
+    </p>
+    <p>
+      .NET 10: the exception handler middleware no longer writes diagnostic logs
+      for exceptions an <code>IExceptionHandler</code> handled, and there's a
+      new <code>ExceptionHandlerOptions.SuppressDiagnosticsCallback</code> to
+      control that per exception. Before, a handled exception could still spam
+      logs as if unhandled.
+    </p>
+    <pre><code>app.UseExceptionHandler(new ExceptionHandlerOptions
+{
+    SuppressDiagnosticsCallback = ctx =&gt; ctx.Exception is MyKnownException
+});</code></pre>
+
+    <h3>
+      Q10. Your custom middleware needs a scoped service. Why can't you inject
+      it in the constructor?
+    </h3>
+    <p>
+      Convention-based middleware is instantiated once at startup and reused for
+      every request – effectively a singleton. Injecting a scoped service (e.g.
+      <code>DbContext</code>) into its constructor captures one instance for the
+      app's whole lifetime: a captive dependency.
+    </p>
+    <p>
+      Fix: inject scoped services into <code>InvokeAsync</code>, where they're
+      resolved from the current request's scope on every call.
+    </p>
+    <pre><code>public class AuditMiddleware(RequestDelegate next)
+{
+    public async Task InvokeAsync(HttpContext context, IAuditService audit) // resolved per request
+    {
+        await audit.RecordAsync(context.Request.Path);
+        await next(context);
+    }
+}</code></pre>
+
+    <!-- ================================================================ -->
+    <h2 id="s3">3. Dependency Injection Internals</h2>
+    <p class="intro">
+      DI is the framework feature candidates use most and understand least.
+      These separate "I call AddScoped" from "I know what the container does
+      with it."
+    </p>
+
+    <h3>
+      Q11. Transient vs Scoped vs Singleton – what does each mean for state and
+      concurrency?
+    </h3>
+    <ul>
+      <li>
+        <b>Transient</b> – new instance every resolve. Lightweight, stateless
+        services.
+      </li>
+      <li>
+        <b>Scoped</b> – one per scope = one per HTTP request. Shared within a
+        request, isolated between requests (e.g. <code>DbContext</code>).
+      </li>
+      <li>
+        <b>Singleton</b> – one for the app's lifetime, shared across all
+        requests and threads. Stateless, thread-safe services and caches.
+      </li>
+    </ul>
+    <p>
+      Concurrency angle: a singleton must be thread-safe; a scoped service must
+      not be captured by a longer-lived one. Lifetime is a correctness decision,
+      not style.
+    </p>
+
+    <h3>
+      Q12. You inject a scoped service into a singleton. What happens, and how
+      does the container catch it?
+    </h3>
+    <p>
+      Captive dependency. The singleton holds the scoped service forever – one
+      <code>DbContext</code>, one change tracker, shared across every request.
+      Thread-safety violations, stale data, unbounded growth.
+    </p>
+    <p>
+      With scope validation on – default in Development – the container
+      validates the graph at startup and throws if a singleton depends on a
+      scoped service. In Production validation is off by default (startup
+      performance), which is why this passes locally and blows up in prod. Fix:
+      inject <code>IServiceScopeFactory</code> and create a scope per unit of
+      work.
+    </p>
+
+    <h3>
+      Q13. You register the same interface three times. What does resolving it
+      give you?
+    </h3>
+    <p>
+      Resolving <code>INotifier</code> gives the <b>last</b> one registered
+      (last-wins). Resolving <code>IEnumerable&lt;INotifier&gt;</code> gives
+      <b>all</b> of them, in registration order – the built-in pattern for "run
+      every handler".
+    </p>
+    <pre><code>builder.Services.AddScoped&lt;INotifier, EmailNotifier&gt;();
+builder.Services.AddScoped&lt;INotifier, SmsNotifier&gt;();
+
+public class Alerts(IEnumerable&lt;INotifier&gt; notifiers) { /* gets both */ }</code></pre>
+
+    <h3>Q14. What problem do keyed services solve?</h3>
+    <p>
+      Keyed services (.NET 8+) register multiple implementations of the same
+      interface under distinct keys and resolve a specific one by key – instead
+      of injecting <code>IEnumerable&lt;T&gt;</code> and filtering, or
+      hand-writing a factory.
+    </p>
+    <pre><code>builder.Services.AddKeyedScoped&lt;IPaymentGateway, StripeGateway&gt;("stripe");
+builder.Services.AddKeyedScoped&lt;IPaymentGateway, PayPalGateway&gt;("paypal");
+
+public class Checkout([FromKeyedServices("stripe")] IPaymentGateway gateway) { }</code></pre>
+    <p>
+      Trade-off: keys reintroduce stringly-typed coupling. Use them for genuine
+      "pick one of N by name" cases (payment providers, cache backends); prefer
+      distinct interfaces when implementations are really different roles.
+    </p>
+
+    <h3>Q15. Who disposes the services the container creates, and when?</h3>
+    <p>
+      The container disposes what it created, tied to the scope that created it:
+    </p>
+    <ul>
+      <li>
+        Scoped disposables → disposed when the scope ends (end of request).
+      </li>
+      <li>
+        Transient disposables resolved from a scope → tracked and disposed with
+        that scope (not immediately!).
+      </li>
+      <li>
+        Singletons → disposed when the root provider is disposed (app shutdown).
+      </li>
+    </ul>
+    <p>
+      Catches: <code>AddSingleton(myInstance)</code> – the container does
+      <b>not</b> dispose it; you own it. And a transient disposable resolved
+      from the root provider lives until shutdown – a slow memory leak if you
+      resolve many from a singleton.
+    </p>
+
+    <!-- ================================================================ -->
+    <h2 id="s4">4. Configuration and Options</h2>
+    <p class="intro">
+      Tests whether you've deployed across environments or only run on
+      localhost.
+    </p>
+
+    <h3>Q16. Two sources set the same config key. Which wins, and why?</h3>
+    <p>
+      Configuration is layered; later providers override earlier ones. Default
+      order from <code>CreateBuilder</code>:
+    </p>
+    <ol>
+      <li><code>appsettings.json</code></li>
+      <li><code>appsettings.{Environment}.json</code></li>
+      <li>User secrets (Development only)</li>
+      <li>Environment variables</li>
+      <li>Command-line arguments (wins over everything)</li>
+    </ol>
+    <p>
+      Ship safe defaults in appsettings.json, override per environment without
+      editing files – e.g. a container sets
+      <code>ConnectionStrings__Default</code> as env var. "My setting isn't
+      taking effect" = something later in the chain overrides it.
+    </p>
+
+    <h3>
+      Q17. IOptions vs IOptionsSnapshot vs IOptionsMonitor – when do you use
+      each?
+    </h3>
+    <ul>
+      <li>
+        <b><code>IOptions&lt;T&gt;</code></b> – singleton, computed once, never
+        reloads.
+      </li>
+      <li>
+        <b><code>IOptionsSnapshot&lt;T&gt;</code></b> – scoped, recomputed per
+        request; picks up changes between requests. Can't inject into a
+        singleton.
+      </li>
+      <li>
+        <b><code>IOptionsMonitor&lt;T&gt;</code></b> – singleton with current
+        value + change callback; reloads on the fly. Use inside singletons and
+        background services.
+      </li>
+    </ul>
+    <p>
+      Trap: injecting <code>IOptionsSnapshot</code> into a
+      <code>BackgroundService</code> or singleton fails or captures a stale
+      scope. For long-lived services needing fresh config →
+      <code>IOptionsMonitor</code>.
+    </p>
+
+    <h3>
+      Q18. How do you make a bad configuration fail at startup instead of at
+      3am?
+    </h3>
+    <p>
+      Validate options and force validation at startup. Binding alone doesn't
+      validate – a missing value binds to null and blows up on first use.
+    </p>
+    <pre><code>builder.Services.AddOptions&lt;SmtpOptions&gt;()
+    .Bind(builder.Configuration.GetSection("Smtp"))
+    .ValidateDataAnnotations()
+    .Validate(o =&gt; o.Port &gt; 0, "SMTP port must be set")
+    .ValidateOnStart();</code></pre>
+    <p>
+      Principle: fail fast and loud at deploy time when a human is watching.
+      Turns a production incident into a failed deployment.
+    </p>
+
+    <h3>
+      Q19. How does the app pick appsettings.Production.json, and where does the
+      environment name come from?
+    </h3>
+    <p>
+      From the <code>ASPNETCORE_ENVIRONMENT</code> (or
+      <code>DOTNET_ENVIRONMENT</code>) environment variable. The host reads it
+      at startup and layers <code>appsettings.{Environment}.json</code> on top
+      of <code>appsettings.json</code>. If unset, default is <b>Production</b>.
+    </p>
+    <p>
+      Same value drives <code>app.Environment.IsDevelopment()</code> – one
+      setting controls config files, error pages, and your own environment
+      branches.
+    </p>
+
+    <!-- ================================================================ -->
+    <h2 id="s5">5. Filters and Model Binding</h2>
+    <p class="intro">
+      The layer above middleware – the part of the pipeline that understands
+      actions, arguments, and results.
+    </p>
+
+    <h3>Q20. Middleware or a filter – how do you decide?</h3>
+    <p>
+      Middleware runs on every request and sees only raw
+      <code>HttpContext</code> – no actions, model binding, or ModelState.
+      Filters run inside the MVC/endpoint layer, after routing and model
+      binding, with action-aware context: bound arguments, selected action,
+      result about to be returned.
+    </p>
+    <p>
+      Rule: app-wide cross-cutting concerns that don't need action details
+      (logging, compression, CORS, exception handling) → middleware. Concerns
+      that inspect action arguments or short-circuit a specific endpoint's
+      result (validation, action-level auth policies, response shaping) →
+      filters.
+    </p>
+
+    <h3>
+      Q21. What's the filter execution order, and where does short-circuiting
+      happen?
+    </h3>
+    <ol>
+      <li>Authorization filters</li>
+      <li>Resource filters</li>
+      <li>Model binding</li>
+      <li>Action filters (before / after the action)</li>
+      <li>Exception filters</li>
+      <li>Result filters (around result execution)</li>
+    </ol>
+    <p>
+      Any filter can short-circuit: an authorization filter that sets a result
+      stops everything below – that's how <code>[Authorize]</code> blocks an
+      action.
+    </p>
+    <p>
+      Nuance: filters of the same type run outer-to-inner on the way in and
+      inner-to-outer on the way out; scope (global / controller / action) plus
+      <code>Order</code> decides the sequence.
+    </p>
+
+    <h3>
+      Q22. Action filters vs endpoint filters – what's the Minimal API
+      equivalent?
+    </h3>
+    <p>
+      Action filters belong to MVC/controllers. Endpoint filters (.NET 7+) are
+      the Minimal API counterpart – they wrap the route handler, run after model
+      binding, and can inspect/modify bound arguments and the result.
+    </p>
+    <pre><code>app.MapPost("/orders", (Order o) =&gt; Results.Ok(o))
+   .AddEndpointFilter(async (ctx, next) =&gt;
+   {
+       // runs after binding, before the handler
+       var result = await next(ctx);
+       return result;
+   });</code></pre>
+
+    <h3>Q23. How does model binding decide where to read a parameter from?</h3>
+    <p>
+      Simple types bind from route values, then query string. Complex types:
+      with <code>[ApiController]</code> (and in minimal APIs) → request body as
+      JSON; in a plain MVC controller → form fields. Explicit attributes:
+      <code>[FromRoute]</code>, <code>[FromQuery]</code>,
+      <code>[FromBody]</code>, <code>[FromHeader]</code>,
+      <code>[FromForm]</code>, <code>[FromServices]</code>.
+    </p>
+    <p>
+      Gotcha: only <b>one</b> parameter can bind from the body – the body is a
+      forward-only stream read once. Two <code>[FromBody]</code> params → the
+      second gets nothing.
+    </p>
+
+    <h3>
+      Q24. In .NET 10, how do you validate input in a Minimal API without
+      FluentValidation?
+    </h3>
+    <p>
+      .NET 10 added built-in validation: call <code>AddValidation()</code> and
+      the framework wires an endpoint filter that validates using
+      DataAnnotations attributes – which now also work on record types.
+    </p>
+    <pre><code>builder.Services.AddValidation();
+
+app.MapPost("/products",
+    (Product p) =&gt; Results.Ok(p)); // validated automatically
+
+public record Product([Required] string Name, [Range(1, 1000)] int Quantity);</code></pre>
+    <p>
+      On failure: 400 with problem details, customizable via
+      <code>IProblemDetailsService</code>. For cross-field or complex
+      conditional rules, FluentValidation is still the better tool.
+    </p>
+
+    <!-- ================================================================ -->
+    <h2 id="s6">6. Request Lifecycle and Background Work</h2>
+    <p class="intro">
+      The senior end of the round – threads, context, lifetime.
+    </p>
+
+    <h3>
+      Q25. What is HttpContext, what's its lifetime, and why is capturing it a
+      bug?
+    </h3>
+    <p>
+      <code>HttpContext</code> is the per-request object holding headers, user,
+      request-scoped service provider, body streams. Lifetime = exactly one
+      request: created when Kestrel accepts the request, disposed when the
+      response completes. Not thread-safe, not valid after the request ends.
+    </p>
+    <p>
+      Stashing it (or its <code>User</code>/<code>Request</code>) in a field,
+      static, or closure that runs later (fire-and-forget, background
+      continuation) → <code>ObjectDisposedException</code> or garbage. Copy the
+      values you need while the request is alive, pass those instead.
+    </p>
+
+    <h3>
+      Q26. Within one request, does everything run on one thread? What happens
+      across an await?
+    </h3>
+    <p>
+      No. On an <code>await</code> of real I/O, the thread is released to the
+      pool, and the continuation may resume on a different thread. That's why
+      async scales.
+    </p>
+    <p>
+      ASP.NET Core has <b>no SynchronizationContext</b> (unlike old ASP.NET): no
+      "UI thread" to marshal back to, <code>ConfigureAwait(false)</code> isn't
+      needed for correctness in app code, and anything assuming thread affinity
+      (<code>[ThreadStatic]</code>, same-thread locks) is broken. Request state
+      lives in DI or <code>HttpContext.Items</code>, not on the thread.
+    </p>
+
+    <h3>
+      Q27. You need the current user inside a singleton service. How, and what's
+      the catch?
+    </h3>
+    <p>
+      Inject <code>IHttpContextAccessor</code> and read
+      <code>.HttpContext</code> when needed. Safe from a singleton because it
+      doesn't capture the context – it resolves the current one on each access
+      via an <code>AsyncLocal</code>.
+    </p>
+    <p>
+      Catches: returns <b>null</b> with no active request (background service,
+      startup) – guard for it; small perf cost from <code>AsyncLocal</code>;
+      must register with <code>AddHttpContextAccessor()</code>. Cleaner where
+      possible: pass user info as a parameter from the request-scoped layer.
+    </p>
+
+    <h3>
+      Q28. An unauthenticated API call returns 401 in .NET 10 where it used to
+      redirect to login. What changed?
+    </h3>
+    <p>
+      .NET 10 cookie authentication change: requests to known API endpoints now
+      return 401/403 instead of a 302 to the login page.
+    </p>
+    <p>
+      How it decides: a new <code>IApiEndpointMetadata</code> marker, applied
+      automatically to <code>[ApiController]</code> actions, minimal APIs that
+      read/write JSON, endpoints using <code>TypedResults</code>, and SignalR.
+      To get the old redirect, override <code>OnRedirectToLogin</code>.
+    </p>
+
+    <h3>
+      Q29. Your BackgroundService needs a DbContext. Why is injecting it a trap,
+      and how does shutdown work?
+    </h3>
+    <p>
+      <code>BackgroundService</code> is a singleton; <code>DbContext</code> is
+      scoped. Constructor injection = captive dependency: one context forever,
+      change tracker growing unbounded. Inject
+      <code>IServiceScopeFactory</code> and create a fresh scope per unit of
+      work:
+    </p>
+    <pre><code>public class Worker(IServiceScopeFactory scopeFactory) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService&lt;AppDbContext&gt;();
+            // fresh, short-lived context per iteration
+            await Task.Delay(1000, stoppingToken);
+        }
+    }
+}</code></pre>
+    <p>
+      Shutdown: the host signals <code>stoppingToken</code>; your loop should
+      observe it and exit within the shutdown timeout (graceful shutdown).
+      Ignore it and in-flight work is killed when the timeout expires.
+    </p>
+
+    <h3>
+      Q30. Walk me through the full journey of a request, from the socket to
+      your endpoint
+    </h3>
+    <ol>
+      <li>
+        Kestrel accepts the TCP connection, parses HTTP into an
+        <code>HttpContext</code>, allocates a request-scoped
+        <code>IServiceProvider</code>.
+      </li>
+      <li>
+        Request enters the middleware pipeline in registration order – exception
+        handling, HTTPS, static files, …
+      </li>
+      <li>
+        <code>UseRouting</code> matches an endpoint;
+        <code>UseAuthentication</code> / <code>UseAuthorization</code> establish
+        and check identity for it.
+      </li>
+      <li>
+        At the endpoint, model binding fills your parameters; the filter /
+        endpoint-filter pipeline runs around the handler.
+      </li>
+      <li>
+        Your handler executes, resolving scoped services from the request's
+        provider.
+      </li>
+      <li>
+        Result is written, execution unwinds back up the middleware in reverse,
+        and the request scope is disposed – releasing scoped services and the
+        <code>DbContext</code>.
+      </li>
+    </ol>
+    <p>
+      If you can narrate this, every earlier question has a home in the story.
+    </p>
+  </body>
+</html>

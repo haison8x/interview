@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docker Interview – 18 Questions</title>
+    <style>
+      body {
+        font-family:
+          Segoe UI,
+          system-ui,
+          sans-serif;
+        line-height: 1.6;
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 24px 16px 80px;
+        color: #222;
+        background: #fff;
+      }
+      h1 {
+        font-size: 1.6em;
+      }
+      h2 {
+        margin-top: 2.2em;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 4px;
+      }
+      h3 {
+        margin-top: 1.8em;
+        margin-bottom: 0.3em;
+      }
+      code {
+        font-family: Consolas, monospace;
+        background: #f3f3f3;
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 0.92em;
+      }
+      pre {
+        background: #f5f5f5;
+        padding: 12px;
+        overflow-x: auto;
+        border-radius: 4px;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+      }
+      .intro {
+        color: #555;
+      }
+      nav ol {
+        padding-left: 20px;
+      }
+      nav a {
+        color: #0b5cad;
+        text-decoration: none;
+      }
+      .src {
+        margin-top: 3em;
+        font-size: 0.9em;
+        color: #555;
+      }
+      .src a {
+        color: #0b5cad;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          color: #ddd;
+          background: #1b1b1b;
+        }
+        h2 {
+          border-color: #444;
+        }
+        code,
+        pre {
+          background: #2a2a2a;
+        }
+        .intro,
+        .src {
+          color: #aaa;
+        }
+        nav a,
+        .src a {
+          color: #6db3ff;
+        }
+      }
+      .back {
+        display: inline-block;
+        margin-bottom: 8px;
+        color: #0b5cad;
+        text-decoration: none;
+        font-size: 0.95em;
+      }
+      .back:hover {
+        text-decoration: underline;
+      }
+      @media (prefers-color-scheme: dark) {
+        .back {
+          color: #6db3ff;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back" href="index.html">&larr; All questions</a>
+    <h1>Docker Interview – 18 Questions</h1>
+
+    <!-- ================================================================ -->
+    <h2 id="s1">1. Docker Fundamentals</h2>
+
+    <h3>
+      Q1. What is the difference between a container and a virtual machine?
+    </h3>
+    <p>
+      A VM virtualises hardware: each VM runs its own full guest kernel on a
+      hypervisor. A container virtualises the operating system: it is just a
+      process on the host, isolated with Linux <b>namespaces</b> (what it can
+      see – PIDs, network, mounts, users) and constrained with
+      <b>cgroups</b> (what it can use – CPU, memory, IO). All containers share
+      the host kernel.
+    </p>
+    <p>
+      Consequences: containers start in milliseconds and are megabytes rather
+      than gigabytes, but isolation is weaker – a kernel exploit affects every
+      container on the host. That is why multi-tenant platforms sometimes add a
+      sandbox layer (gVisor, Kata Containers, Firecracker microVMs). It also
+      means a Linux container needs a Linux kernel; on Windows/macOS, Docker
+      Desktop runs a small Linux VM underneath.
+    </p>
+
+    <h3>Q2. Image vs container – and what are layers?</h3>
+    <p>
+      An <b>image</b> is a read-only template: an ordered stack of filesystem
+      layers plus metadata (entrypoint, env, exposed ports). A
+      <b>container</b> is a running (or stopped) instance of an image, with a
+      thin writable layer on top.
+    </p>
+    <p>
+      Each Dockerfile instruction that changes the filesystem (<code>RUN</code>,
+      <code>COPY</code>, <code>ADD</code>) produces a layer. Layers are
+      content-addressed and shared: ten containers from the same image share the
+      same read-only layers on disk. Writes go to the container's layer via
+      <b>copy-on-write</b> – modifying a file from a lower layer copies it up
+      first. That is also why deleting a file in a later layer does not shrink
+      the image: the bytes are still in the earlier layer.
+    </p>
+
+    <h3>Q3. What is the difference between CMD and ENTRYPOINT?</h3>
+    <p>
+      <code>ENTRYPOINT</code> defines the executable that always runs;
+      <code>CMD</code> provides default arguments (or a default command if there
+      is no ENTRYPOINT). Arguments to <code>docker run image ...</code> replace
+      <code>CMD</code>, not <code>ENTRYPOINT</code> (that needs
+      <code>--entrypoint</code>).
+    </p>
+    <pre><code>ENTRYPOINT ["dotnet", "MyApi.dll"]
+CMD ["--urls", "http://+:8080"]   # overridable defaults</code></pre>
+    <p>
+      The part that matters in production is <b>exec form vs shell form</b>.
+      <code>ENTRYPOINT ["app"]</code> (exec form) runs your process as PID 1.
+      <code>ENTRYPOINT app</code> (shell form) runs <code>/bin/sh -c app</code>,
+      so the shell is PID 1 and your app never receives SIGTERM – see Q12.
+    </p>
+
+    <h3>
+      Q4. Docker, containerd, runc, OCI – who does what? Do Docker images still
+      work on Kubernetes?
+    </h3>
+    <ul>
+      <li>
+        <b>OCI</b> – the standards for image format and runtime, so images are
+        portable across tools.
+      </li>
+      <li>
+        <b>runc</b> – low-level runtime that actually creates the
+        namespaces/cgroups and starts the process.
+      </li>
+      <li>
+        <b>containerd</b> (or CRI-O) – high-level runtime: pulls images, manages
+        snapshots, supervises containers.
+      </li>
+      <li>
+        <b>Docker Engine</b> – developer tooling (CLI, BuildKit, networks,
+        compose) built on top of containerd.
+      </li>
+    </ul>
+    <p>
+      Kubernetes talks to runtimes through the CRI. The
+      <b>dockershim</b> adapter was removed in Kubernetes 1.24, so nodes run
+      containerd or CRI-O directly. Images built with Docker are OCI images and
+      run unchanged – what broke was only things that depended on the Docker
+      socket on the node (e.g. Docker-in-Docker builds, some monitoring agents).
+    </p>
+
+    <h3>
+      Q5. Why is using the <code>latest</code> tag in production a bad idea?
+      Tags vs digests.
+    </h3>
+    <p>
+      A tag is a mutable pointer; <code>latest</code> is just the default tag
+      name, not "the newest". Two nodes pulling <code>myapp:latest</code> an
+      hour apart can run different code, rollbacks become impossible to reason
+      about, and with <code>imagePullPolicy: IfNotPresent</code> a node may keep
+      an old cached copy.
+    </p>
+    <p>
+      Use immutable, meaningful tags (version or git SHA) and, for the strongest
+      guarantee, pin by <b>digest</b> (<code>myapp@sha256:...</code>) – the
+      digest is the hash of the content, so it can never point at different
+      bytes. Many registries can also enforce tag immutability.
+    </p>
+
+    <!-- ================================================================ -->
+    <h2 id="s2">2. Dockerfile and Builds</h2>
+
+    <h3>Q6. What is a multi-stage build and why use it?</h3>
+    <p>
+      Multiple <code>FROM</code> stages in one Dockerfile: build in a stage with
+      the full SDK and toolchain, then copy only the artefacts into a small
+      runtime stage. Compilers, source code, package caches and build secrets
+      never reach the final image.
+    </p>
+    <pre><code>FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY *.csproj .
+RUN dotnet restore
+COPY . .
+RUN dotnet publish -c Release -o /app
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app .
+USER app
+ENTRYPOINT ["dotnet", "MyApi.dll"]</code></pre>
+    <p>
+      Result: smaller image, faster pulls, smaller attack surface. BuildKit also
+      builds independent stages in parallel and skips stages the target does not
+      need.
+    </p>
+
+    <h3>
+      Q7. Every build re-downloads all dependencies. Why, and how do you fix it?
+    </h3>
+    <p>
+      Layer caching is sequential: once one instruction's inputs change, that
+      layer and <b>every layer after it</b> is rebuilt. If you
+      <code>COPY . .</code> before restoring packages, any source change
+      invalidates the restore layer.
+    </p>
+    <p>
+      Order instructions from least to most frequently changing: copy only the
+      dependency manifests (<code>*.csproj</code>, <code>package.json</code> +
+      lock file, <code>requirements.txt</code>), restore, <b>then</b> copy the
+      source. With BuildKit you can also use cache mounts so the package cache
+      survives even when the layer is rebuilt:
+    </p>
+    <pre><code>RUN --mount=type=cache,target=/root/.nuget/packages dotnet restore</code></pre>
+    <p>
+      In CI, where each runner starts empty, use a remote cache
+      (<code>--cache-from</code>/<code>--cache-to</code> with a registry or the
+      CI cache).
+    </p>
+
+    <h3>
+      Q8. What is the build context, and why does .dockerignore matter? COPY vs
+      ADD?
+    </h3>
+    <p>
+      The build context is the directory sent to the builder. Without a
+      <code>.dockerignore</code>, that includes <code>.git</code>,
+      <code>node_modules</code>, <code>bin/obj</code>, local
+      <code>.env</code> files – slow builds, needless cache busts, and secrets
+      accidentally copied into the image by a <code>COPY . .</code>.
+    </p>
+    <p>
+      <code>COPY</code> copies local files. <code>ADD</code> additionally
+      extracts local tar archives and can fetch URLs. Prefer <code>COPY</code> –
+      it is explicit and predictable; use <code>ADD</code> only when you
+      specifically want auto-extraction.
+    </p>
+
+    <h3>Q9. Your image is 1.5 GB. How do you shrink it?</h3>
+    <ul>
+      <li>
+        <b>Multi-stage build</b> – the biggest win; drop the SDK and build
+        tools.
+      </li>
+      <li>
+        <b>Smaller base</b> – <code>-slim</code>, Alpine (watch musl vs glibc
+        differences), <b>distroless</b> or chiseled images with no shell or
+        package manager.
+      </li>
+      <li>
+        <b>Clean up in the same layer</b> –
+        <code>apt-get install ... &amp;&amp; rm -rf /var/lib/apt/lists/*</code>
+        in one <code>RUN</code>; deleting in a later layer saves nothing.
+      </li>
+      <li>
+        <code>--no-install-recommends</code>, no dev dependencies in the runtime
+        stage.
+      </li>
+      <li><b>.dockerignore</b> to keep junk out of the context.</li>
+    </ul>
+    <p>
+      Inspect with <code>docker history</code> or <code>dive</code> to see which
+      layer is actually large before guessing.
+    </p>
+
+    <h3>
+      Q10. How do you use a secret (e.g. a private package token) during a build
+      without leaking it?
+    </h3>
+    <p>
+      Not with <code>ARG</code> or <code>ENV</code> – build args are recorded in
+      the image history and <code>ENV</code> values ship inside the image.
+      Copying a file in and deleting it later also leaks it through the earlier
+      layer.
+    </p>
+    <p>
+      Use a BuildKit secret mount: the secret is available only during that
+      single <code>RUN</code> and is never written to a layer.
+    </p>
+    <pre><code># Dockerfile
+RUN --mount=type=secret,id=nuget_token \
+    NUGET_TOKEN=$(cat /run/secrets/nuget_token) dotnet restore
+
+# build
+docker build --secret id=nuget_token,env=NUGET_TOKEN .</code></pre>
+    <p>
+      For SSH-based git access, <code>RUN --mount=type=ssh</code> works the same
+      way. Runtime secrets are a separate matter – inject them at run time
+      (env/orchestrator secrets/mounted files), never bake them in.
+    </p>
+
+    <h3>Q11. How do you secure the container supply chain?</h3>
+    <ul>
+      <li>
+        <b>Trusted, minimal bases</b> – official or vendor images, pinned by
+        digest, rebuilt regularly to pick up patches.
+      </li>
+      <li>
+        <b>Scan</b> images in CI and in the registry (Trivy, Grype, Docker
+        Scout) and fail on critical CVEs with a fix available.
+      </li>
+      <li>
+        <b>SBOM</b> – generate a software bill of materials so you can answer
+        "are we affected?" in minutes when the next big CVE drops.
+      </li>
+      <li>
+        <b>Sign</b> images (cosign / Sigstore) and verify signatures at
+        admission time in the cluster, so only images built by your pipeline can
+        run.
+      </li>
+      <li>Restrict which registries the cluster may pull from.</li>
+    </ul>
+
+    <!-- ================================================================ -->
+    <h2 id="s3">3. Docker Runtime, Networking, Storage</h2>
+
+    <h3>
+      Q12. <code>docker stop</code> takes 10 seconds and your app never shuts
+      down gracefully. Why?
+    </h3>
+    <p>
+      <code>docker stop</code> sends SIGTERM to PID 1, waits (10s by default),
+      then sends SIGKILL. Two common causes:
+    </p>
+    <ol>
+      <li>
+        <b>Shell form</b> <code>ENTRYPOINT</code>/<code>CMD</code> or a wrapper
+        script: <code>/bin/sh</code> is PID 1 and does not forward signals to
+        your app. Fix: exec form, and in wrapper scripts end with
+        <code>exec "$@"</code> so your app replaces the shell.
+      </li>
+      <li>
+        <b>PID 1 semantics:</b> the kernel does not apply default signal
+        handlers to PID 1, so a process that never registered a SIGTERM handler
+        simply ignores it. PID 1 is also responsible for reaping zombie child
+        processes. If your process spawns children, run a tiny init (<code
+          >docker run --init</code
+        >, tini, dumb-init).
+      </li>
+    </ol>
+    <p>
+      Exit code 137 (128+9) after stop means it had to be SIGKILLed; 143
+      (128+15) means it exited on SIGTERM.
+    </p>
+
+    <h3>
+      Q13. Why run containers as non-root, and what else hardens a container?
+    </h3>
+    <p>
+      Root in a container is root on the host kernel, limited only by namespaces
+      and dropped capabilities. If an attacker escapes the container (kernel
+      bug, misconfigured mount, Docker socket mounted inside), running as root
+      makes it a host compromise.
+    </p>
+    <ul>
+      <li>
+        <code>USER</code> a non-root UID in the Dockerfile (many base images
+        ship one, e.g. <code>app</code> in .NET images); listen on a port above
+        1024.
+      </li>
+      <li>
+        Read-only root filesystem (<code>--read-only</code>), with tmpfs for
+        scratch space.
+      </li>
+      <li>
+        Drop all capabilities and add back only what is needed (<code
+          >--cap-drop ALL</code
+        >); <code>no-new-privileges</code>.
+      </li>
+      <li>
+        Never mount <code>/var/run/docker.sock</code> into an app container – it
+        is root on the host.
+      </li>
+      <li>
+        Avoid <code>--privileged</code>; consider rootless Docker or user
+        namespace remapping.
+      </li>
+    </ul>
+
+    <h3>Q14. A container keeps dying with exit code 137. What's happening?</h3>
+    <p>
+      137 = killed by SIGKILL. The most common source is the kernel
+      <b>OOM killer</b> because the container exceeded its cgroup memory limit
+      (<code>docker inspect</code> shows <code>OOMKilled: true</code>). Other
+      sources: a <code>docker stop</code>/orchestrator timeout, or a manual
+      kill.
+    </p>
+    <p>
+      For OOM: check whether usage genuinely needs more memory or is a leak.
+      Also make sure the runtime is container-aware – modern .NET and JVM read
+      the cgroup limit and size their heaps from it, but old runtimes or
+      hard-coded heap flags may assume the host's RAM and blow straight through
+      the limit. Native memory and file cache in tmpfs also count against the
+      limit.
+    </p>
+
+    <h3>
+      Q15. A container exits immediately after starting. How do you debug it?
+    </h3>
+    <ol>
+      <li>
+        <code>docker ps -a</code> for the exit code,
+        <code>docker logs &lt;id&gt;</code> for output.
+      </li>
+      <li>
+        Remember: a container lives exactly as long as its main process. A
+        command that finishes (or a service that daemonises into the background)
+        ends the container.
+      </li>
+      <li>
+        Run interactively with the entrypoint overridden to look inside:
+        <code>docker run -it --entrypoint sh myimage</code>, then run the
+        command by hand.
+      </li>
+      <li>
+        <code>docker inspect</code> to check the effective Entrypoint/Cmd, env
+        and mounts.
+      </li>
+      <li>
+        Distroless image with no shell? Use <code>docker debug</code> or attach
+        a debug container sharing its namespaces.
+      </li>
+    </ol>
+    <p>
+      Usual causes: wrong path or working directory, missing config/env
+      variable, file permission problem after switching to a non-root user, or
+      binary built for the wrong architecture (arm64 vs amd64 – "exec format
+      error").
+    </p>
+
+    <h3>
+      Q16. Explain Docker networking. Why can't my container reach a service on
+      <code>localhost</code>?
+    </h3>
+    <ul>
+      <li>
+        <b>bridge</b> (default) – containers get private IPs on a virtual
+        bridge; outbound via NAT; inbound only through published ports (<code
+          >-p 8080:80</code
+        >).
+      </li>
+      <li>
+        <b>user-defined bridge</b> – same, plus built-in DNS: containers resolve
+        each other by name. The default bridge does <i>not</i> do name
+        resolution – one reason Compose always creates its own network.
+      </li>
+      <li>
+        <b>host</b> – shares the host network stack; no isolation, no port
+        mapping.
+      </li>
+      <li><b>none</b> – no networking.</li>
+      <li><b>overlay</b> – multi-host networking (Swarm).</li>
+    </ul>
+    <p>
+      <code>localhost</code> inside a container is the container itself, not the
+      host or another container. Call other containers by service name on a
+      shared network; reach the host via
+      <code>host.docker.internal</code> (Docker Desktop, or add it with
+      <code>--add-host=host.docker.internal:host-gateway</code> on Linux).
+    </p>
+
+    <h3>
+      Q17. Volumes vs bind mounts vs tmpfs – and why did my data disappear?
+    </h3>
+    <ul>
+      <li>
+        <b>Named volume</b> – managed by Docker, lives outside the container
+        lifecycle, portable, the right default for persistent data (databases).
+      </li>
+      <li>
+        <b>Bind mount</b> – a specific host path mapped in. Great for
+        development (live code reload), fragile in production (host path and
+        permissions dependencies).
+      </li>
+      <li>
+        <b>tmpfs</b> – in memory only, gone on stop; good for scratch data and
+        secrets you do not want on disk.
+      </li>
+    </ul>
+    <p>
+      Data written to the container's writable layer is deleted when the
+      container is removed (<code>docker rm</code>, <code>compose down</code>,
+      recreating on a new image). If it must survive, it must be in a volume.
+      Watch out also for <code>docker compose down -v</code>, which deletes
+      named volumes.
+    </p>
+
+    <h3>
+      Q18. In Docker Compose, the API starts before the database is ready and
+      crashes. How do you fix it?
+    </h3>
+    <p>
+      Plain <code>depends_on</code> only waits for the dependency container to
+      <b>start</b>, not to be ready. Add a healthcheck and wait for it:
+    </p>
+    <pre><code>services:
+  db:
+    image: postgres:17
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy</code></pre>
+    <p>
+      The more robust fix is in the app itself: retry the connection with
+      backoff at startup. In Kubernetes there is no <code>depends_on</code> at
+      all, so the app has to tolerate dependencies being unavailable anyway.
+    </p>
+
+    <p class="src">
+      <b>Sources:</b>
+      <a
+        href="https://www.techinterview.org/post/3233460376/kubernetes-and-docker-interview-questions-2026/"
+        >techinterview.org</a
+      >
+      ·
+      <a
+        href="https://prachub.com/resources/docker-interview-questions-for-platform-engineers-images-networking-volumes-and-debugging"
+        >PracHub – Docker</a
+      >
+      ·
+      <a href="https://kodekloud.com/blog/docker-interview-questions/"
+        >KodeKloud</a
+      >
+    </p>
+  </body>
+</html>

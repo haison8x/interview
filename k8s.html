@@ -108,7 +108,9 @@
     <p class="intro">
       From basics to cluster administration and production troubleshooting
       scenarios. Container fundamentals (images, Dockerfiles, PID 1, signals)
-      are on the <a href="docker.html">Docker page</a>.
+      are on the <a href="docker.html">Docker page</a>. For in-depth
+      explanations of every question, see the
+      <a href="k8s-study.html">Kubernetes study guide</a>.
     </p>
 
     <nav>
@@ -124,7 +126,7 @@
     <!-- ================================================================ -->
     <h2 id="s1">1. Basics</h2>
 
-    <h3>Q1. What are the components of a Kubernetes cluster?</h3>
+    <h3 id="q1">Q1. What are the components of a Kubernetes cluster?</h3>
     <p><b>Control plane:</b></p>
     <ul>
       <li>
@@ -159,7 +161,7 @@
       close the gap.
     </p>
 
-    <h3>
+    <h3 id="q2">
       Q2. What happens, end to end, when you run <code>kubectl apply</code> on
       a Deployment?
     </h3>
@@ -194,7 +196,7 @@
       react. That's why the system self-heals.
     </p>
 
-    <h3>Q3. What is a Pod, and why does Kubernetes schedule pods, not containers?</h3>
+    <h3 id="q3">Q3. What is a Pod, and why does Kubernetes schedule pods, not containers?</h3>
     <p>
       A Pod is the smallest deployable unit: one or more containers that share a
       network namespace (same IP, talk over <code>localhost</code>), can share
@@ -218,7 +220,7 @@ spec:
       StatefulSet, Job…) creates and replaces them for you.
     </p>
 
-    <h3>Q4. What is kubectl, and which commands do you use daily?</h3>
+    <h3 id="q4">Q4. What is kubectl, and which commands do you use daily?</h3>
     <p>
       kubectl is the CLI for the Kubernetes API. Everything it does is a REST
       call to the API server, authenticated with the credentials in your
@@ -238,7 +240,7 @@ kubectl explain deployment.spec.strategy # built-in API docs</code></pre>
       the applying (Q60).
     </p>
 
-    <h3>Q5. What is a Deployment?</h3>
+    <h3 id="q5">Q5. What is a Deployment?</h3>
     <p>
       A Deployment manages stateless, interchangeable replicas. You declare the
       desired state (image, replica count, pod template); the Deployment creates
@@ -270,7 +272,7 @@ spec:
       immutable after creation.
     </p>
 
-    <h3>Q6. What is a Service, and why is it needed?</h3>
+    <h3 id="q6">Q6. What is a Service, and why is it needed?</h3>
     <p>
       Pods come and go and their IPs change, so clients cannot talk to pod IPs
       directly. A Service gives a group of pods – selected by <b>labels</b> – a
@@ -295,7 +297,7 @@ spec:
       <code>kubectl get endpointslices -l kubernetes.io/service-name=my-service</code>.
     </p>
 
-    <h3>Q7. What Service types are there?</h3>
+    <h3 id="q7">Q7. What Service types are there?</h3>
     <ul>
       <li>
         <b>ClusterIP</b> (default) – stable virtual IP and DNS name reachable
@@ -322,7 +324,7 @@ spec:
       per service.
     </p>
 
-    <h3>Q8. ConfigMap vs Secret – and are Secrets actually secret?</h3>
+    <h3 id="q8">Q8. ConfigMap vs Secret – and are Secrets actually secret?</h3>
     <p>
       Both inject configuration as env variables or mounted files, keeping
       config out of the image. ConfigMap is for non-sensitive data; Secret is
@@ -371,7 +373,7 @@ stringData:            # plain text in; stored base64-encoded
       has to re-read them.
     </p>
 
-    <h3>Q9. What are Namespaces?</h3>
+    <h3 id="q9">Q9. What are Namespaces?</h3>
     <p>
       A namespace is a logical partition of one cluster: a scope for names, and
       the boundary to which RBAC, ResourceQuotas, LimitRanges and
@@ -389,7 +391,7 @@ kubectl config set-context --current --namespace=dev   # change default</code></
       cluster-scoped (Nodes, PersistentVolumes, ClusterRoles, StorageClasses).
     </p>
 
-    <h3>Q10. What are labels and selectors?</h3>
+    <h3 id="q10">Q10. What are labels and selectors?</h3>
     <p>
       Labels are key/value pairs on objects (<code>app: nginx</code>,
       <code>env: prod</code>). Selectors filter objects by labels. They are how
@@ -404,7 +406,7 @@ kubectl get pods -l 'env in (prod,staging),tier!=frontend'</code></pre>
       metadata for tools (build info, ingress controller settings).
     </p>
 
-    <h3>
+    <h3 id="q11">
       Q11. Explain PV, PVC and StorageClass. Why is my pod Pending on a volume?
     </h3>
     <ul>
@@ -450,7 +452,7 @@ spec:
     <!-- ================================================================ -->
     <h2 id="s2">2. Networking, Config, Resources, Rollouts</h2>
 
-    <h3>Q12. How does Kubernetes networking work?</h3>
+    <h3 id="q12">Q12. How does Kubernetes networking work?</h3>
     <p>The Kubernetes network model has a few simple rules:</p>
     <ul>
       <li>
@@ -473,7 +475,7 @@ spec:
       </li>
     </ul>
 
-    <h3>
+    <h3 id="q13">
       Q13. How does a ClusterIP actually route traffic? Nothing listens on that
       IP.
     </h3>
@@ -492,7 +494,7 @@ spec:
       pod and need client-side or L7 (mesh/gateway) balancing.
     </p>
 
-    <h3>
+    <h3 id="q14">
       Q14. How does RBAC work, and how do pods authenticate to the API and the
       cloud?
     </h3>
@@ -545,7 +547,7 @@ roleRef:
       Secrets.
     </p>
 
-    <h3>
+    <h3 id="q15">
       Q15. HPA, VPA, Cluster Autoscaler – how do they fit together? Traffic
       doubled but HPA didn't scale – why?
     </h3>
@@ -611,7 +613,7 @@ spec:
       </li>
     </ul>
 
-    <h3>Q16. How do you debug a failing pod?</h3>
+    <h3 id="q16">Q16. How do you debug a failing pod?</h3>
     <p>Work from the outside in:</p>
     <pre><code>kubectl get pod &lt;pod&gt; -o wide          # status, restarts, node
 kubectl describe pod &lt;pod&gt;              # Events, Last State, exit code
@@ -631,7 +633,7 @@ kubectl debug node/&lt;node&gt; -it --image=busybox   # debug the node itself</c
       Running but not Ready → readiness probe (Q56).
     </p>
 
-    <h3>
+    <h3 id="q17">
       Q17. Liveness vs readiness vs startup probes – and how can a probe cause
       an outage?
     </h3>
@@ -674,7 +676,7 @@ kubectl debug node/&lt;node&gt; -it --image=busybox   # debug the node itself</c
       that looks exactly like an application crash.
     </p>
 
-    <h3>Q18. How does a rolling update work, and how do you roll back?</h3>
+    <h3 id="q18">Q18. How does a rolling update work, and how do you roll back?</h3>
     <p>
       The Deployment creates a new ReplicaSet and shifts pods across gradually,
       controlled by:
@@ -703,7 +705,7 @@ kubectl rollout undo deployment/my-app --to-revision=3</code></pre>
       setup, rollback is a git revert instead.
     </p>
 
-    <h3>Q19. What is an Ingress, and how does it work?</h3>
+    <h3 id="q19">Q19. What is an Ingress, and how does it work?</h3>
     <p>
       An Ingress is an API object for L7 HTTP(S) routing from outside the
       cluster to Services, by host and path, with TLS termination. The Ingress
@@ -737,7 +739,7 @@ spec:
       configs aren't portable between controllers.
     </p>
 
-    <h3>
+    <h3 id="q20">
       Q20. What is the Gateway API, how is it different from Ingress – and what
       happened to ingress-nginx?
     </h3>
@@ -773,7 +775,7 @@ spec:
       <i>API</i> itself is not removed, only that popular controller.
     </p>
 
-    <h3>Q21. Requests vs limits – and what are QoS classes?</h3>
+    <h3 id="q21">Q21. Requests vs limits – and what are QoS classes?</h3>
     <p>
       <b>Requests</b> are what the scheduler reserves: a pod only lands on a
       node with enough unreserved allocatable capacity, and under contention the
@@ -803,7 +805,7 @@ spec:
       too high wastes money. Base them on observed usage.
     </p>
 
-    <h3>Q22. What happens when a container exceeds its limits?</h3>
+    <h3 id="q22">Q22. What happens when a container exceeds its limits?</h3>
     <p>
       The two resources behave differently because memory is not compressible
       and CPU is:
@@ -826,7 +828,7 @@ spec:
       the kubelet removes pods even if they are within their limits (Q57).
     </p>
 
-    <h3>Q23. Should you set CPU limits?</h3>
+    <h3 id="q23">Q23. Should you set CPU limits?</h3>
     <p>
       It is a real debate, and the senior answer explains the mechanism. CPU
       limits are enforced by CFS quota per time period: a multi-threaded app can
@@ -845,7 +847,7 @@ spec:
       <code>container_cpu_cfs_throttled_periods_total</code> metric either way.
     </p>
 
-    <h3>Q24. What are init containers, and when should you use them?</h3>
+    <h3 id="q24">Q24. What are init containers, and when should you use them?</h3>
     <p>
       Init containers run <b>to completion, one after another</b>, before the
       app containers start. If one fails, the pod restarts it (per
@@ -867,7 +869,7 @@ spec:
       app must still tolerate the dependency disappearing later.
     </p>
 
-    <h3>Q25. What is a PodDisruptionBudget, and how do you keep apps highly available?</h3>
+    <h3 id="q25">Q25. What is a PodDisruptionBudget, and how do you keep apps highly available?</h3>
     <p>
       A PDB limits how many pods of an application may be down at once due to
       <b>voluntary</b> disruptions – node drains, cluster upgrades, autoscaler
@@ -896,7 +898,7 @@ spec:
       meaningful readiness probes.
     </p>
 
-    <h3>Q26. What is a NetworkPolicy, and why might yours do nothing?</h3>
+    <h3 id="q26">Q26. What is a NetworkPolicy, and why might yours do nothing?</h3>
     <p>
       By default every pod can talk to every other pod in the cluster. A
       NetworkPolicy selects pods by label and whitelists allowed ingress and/or
@@ -926,7 +928,7 @@ spec:
     <!-- ================================================================ -->
     <h2 id="s3">3. Advanced Workloads and Extensibility</h2>
 
-    <h3>
+    <h3 id="q27">
       Q27. What is a StatefulSet, and how does it differ from a Deployment?
     </h3>
     <ul>
@@ -950,7 +952,7 @@ spec:
       are usually the better answer.
     </p>
 
-    <h3>Q28. What is a DaemonSet, and when would you use it?</h3>
+    <h3 id="q28">Q28. What is a DaemonSet, and when would you use it?</h3>
     <p>
       A DaemonSet runs exactly one pod per (matching) node. When a node joins,
       the pod is added automatically; when the node leaves, the pod goes with
@@ -983,7 +985,7 @@ spec:
       (e.g. only GPU nodes for a GPU driver plugin).
     </p>
 
-    <h3>Q29. Jobs and CronJobs – what should you know?</h3>
+    <h3 id="q29">Q29. Jobs and CronJobs – what should you know?</h3>
     <p>
       A <b>Job</b> runs pods to completion: <code>completions</code>,
       <code>parallelism</code>, <code>backoffLimit</code> for retries,
@@ -1007,7 +1009,7 @@ spec:
       </li>
     </ul>
 
-    <h3>Q30. What is a service mesh, and why use one?</h3>
+    <h3 id="q30">Q30. What is a service mesh, and why use one?</h3>
     <p>
       A service mesh moves service-to-service concerns from application code
       into the infrastructure layer:
@@ -1033,7 +1035,7 @@ spec:
       traffic control, not by default.
     </p>
 
-    <h3>
+    <h3 id="q31">
       Q31. How do you control where pods run? Taints, tolerations, affinity,
       topology spread.
     </h3>
@@ -1074,7 +1076,7 @@ tolerations:
       mysteriously Pending pods.
     </p>
 
-    <h3>Q32. What are sidecar containers, and how are they used?</h3>
+    <h3 id="q32">Q32. What are sidecar containers, and how are they used?</h3>
     <p>
       A sidecar is a helper container in the same pod as the app, sharing its
       network and volumes. Typical uses: log shipping, a service-mesh proxy
@@ -1101,7 +1103,7 @@ tolerations:
       the lifecycle problems in Q33.
     </p>
 
-    <h3>Q33. What are native sidecars, and what problem do they solve?</h3>
+    <h3 id="q33">Q33. What are native sidecars, and what problem do they solve?</h3>
     <p>
       With plain containers, Kubernetes had no idea which container was the
       helper: the app could start before its proxy was ready (and fail its first
@@ -1123,7 +1125,7 @@ tolerations:
     - name: app
       image: my-app</code></pre>
 
-    <h3>Q34. What are admission webhooks and admission policies?</h3>
+    <h3 id="q34">Q34. What are admission webhooks and admission policies?</h3>
     <p>
       Admission control runs inside the API server after authentication and
       authorisation, before an object is persisted to etcd:
@@ -1152,7 +1154,7 @@ tolerations:
       <code>kube-system</code>, and monitor their latency.
     </p>
 
-    <h3>
+    <h3 id="q35">
       Q35. How do you achieve zero-downtime deployments? Why do users still get
       errors during a rolling update?
     </h3>
@@ -1194,7 +1196,7 @@ tolerations:
       </li>
     </ul>
 
-    <h3>Q36. What are Custom Resource Definitions (CRDs)?</h3>
+    <h3 id="q36">Q36. What are Custom Resource Definitions (CRDs)?</h3>
     <p>
       A CRD adds a new resource type to the Kubernetes API. Once installed, you
       can <code>kubectl get</code>, RBAC-protect, watch and store custom objects
@@ -1231,7 +1233,7 @@ spec:
       Operator's <code>ServiceMonitor</code>.
     </p>
 
-    <h3>Q37. What is an operator, and how does it work?</h3>
+    <h3 id="q37">Q37. What is an operator, and how does it work?</h3>
     <p>
       An operator = CRDs + a custom controller that encodes operational
       knowledge for one piece of software. Like built-in controllers, it runs a
@@ -1247,7 +1249,7 @@ spec:
       they react to current state, not to individual events.
     </p>
 
-    <h3>Q38. What is in-place pod resize?</h3>
+    <h3 id="q38">Q38. What is in-place pod resize?</h3>
     <p>
       Historically, changing a pod's CPU or memory meant deleting and recreating
       it. Since <b>Kubernetes 1.35 in-place pod resize is GA</b>: you can change
@@ -1268,7 +1270,7 @@ spec:
     <!-- ================================================================ -->
     <h2 id="s4">4. Cluster Administration</h2>
 
-    <h3>Q39. How do you back up and restore etcd?</h3>
+    <h3 id="q39">Q39. How do you back up and restore etcd?</h3>
     <p>
       etcd holds the entire cluster state, so on self-managed clusters it must
       be backed up regularly and the restore rehearsed. (On managed services –
@@ -1290,7 +1292,7 @@ etcdutl snapshot restore /backup/etcd-2026-11-14.db \
       snapshots off the node and encrypted – they contain every Secret.
     </p>
 
-    <h3>Q40. How do you upgrade a cluster safely?</h3>
+    <h3 id="q40">Q40. How do you upgrade a cluster safely?</h3>
     <ul>
       <li>
         <b>Read the release notes and deprecation guide</b> – removed APIs are
@@ -1330,7 +1332,7 @@ kubectl uncordon node-1</code></pre>
       support each, so upgrading must be routine, not a project.
     </p>
 
-    <h3>Q41. How do you monitor a cluster?</h3>
+    <h3 id="q41">Q41. How do you monitor a cluster?</h3>
     <ul>
       <li>
         <b>Metrics:</b> Prometheus (often via kube-prometheus-stack) scraping
@@ -1350,7 +1352,7 @@ kubectl uncordon node-1</code></pre>
       control-plane/etcd latency on self-managed clusters.
     </p>
 
-    <h3>Q42. How do you set up logging?</h3>
+    <h3 id="q42">Q42. How do you set up logging?</h3>
     <p>
       Containers log to stdout/stderr; the runtime writes those to files on the
       node, and <code>kubectl logs</code> reads them – but they are lost when
@@ -1373,7 +1375,7 @@ kubectl uncordon node-1</code></pre>
       investigations.
     </p>
 
-    <h3>Q43. How do you prevent pods from running privileged or as root?</h3>
+    <h3 id="q43">Q43. How do you prevent pods from running privileged or as root?</h3>
     <p>At the pod level, a <code>securityContext</code>:</p>
     <pre><code>securityContext:
   runAsNonRoot: true
@@ -1400,7 +1402,7 @@ kubectl uncordon node-1</code></pre>
       ValidatingAdmissionPolicy (Q34).
     </p>
 
-    <h3>Q44. How do you secure a Kubernetes cluster overall?</h3>
+    <h3 id="q44">Q44. How do you secure a Kubernetes cluster overall?</h3>
     <p>Think in layers – the "4C" model: Cloud, Cluster, Container, Code.</p>
     <ul>
       <li>
@@ -1427,7 +1429,7 @@ kubectl uncordon node-1</code></pre>
       e.g. a shell spawned in a production container.
     </p>
 
-    <h3>Q45. How do you make the cluster itself highly available?</h3>
+    <h3 id="q45">Q45. How do you make the cluster itself highly available?</h3>
     <ul>
       <li>
         <b>Control plane:</b> 3 (or 5) control-plane nodes across zones behind a
@@ -1453,7 +1455,7 @@ kubectl uncordon node-1</code></pre>
       workload HA. For region-level failure, you need multiple clusters.
     </p>
 
-    <h3>
+    <h3 id="q46">
       Q46. How do you encrypt Secrets at rest in etcd?
     </h3>
     <p>
@@ -1487,7 +1489,7 @@ resources:
       encryption with your own KMS key.
     </p>
 
-    <h3>
+    <h3 id="q47">
       Q47. Several teams share one cluster. How do you stop one team affecting
       another?
     </h3>
@@ -1516,7 +1518,7 @@ resources:
       virtual clusters (vCluster), or sandboxed runtimes (gVisor, Kata).
     </p>
 
-    <h3>Q48. ResourceQuota vs LimitRange?</h3>
+    <h3 id="q48">Q48. ResourceQuota vs LimitRange?</h3>
     <p>
       <b>ResourceQuota</b> limits the <i>total</i> a namespace may consume;
       <b>LimitRange</b> sets defaults and min/max <i>per container/pod</i>.
@@ -1552,7 +1554,7 @@ spec:
       Deployment's – a common "why are no pods created?" trap.
     </p>
 
-    <h3>Q49. How does DNS (CoreDNS) work, and why might lookups be slow?</h3>
+    <h3 id="q49">Q49. How does DNS (CoreDNS) work, and why might lookups be slow?</h3>
     <p>
       CoreDNS runs as a Deployment in <code>kube-system</code> and serves
       records like <code>my-svc.my-namespace.svc.cluster.local</code>. Pods get
@@ -1576,7 +1578,7 @@ spec:
     <!-- ================================================================ -->
     <h2 id="s5">5. Production Scenarios</h2>
 
-    <h3>
+    <h3 id="q50">
       Q50. An application in Kubernetes has become slow. How do you investigate?
     </h3>
     <ol>
@@ -1612,7 +1614,7 @@ spec:
       kubectl – they show <i>which</i> hop is slow.
     </p>
 
-    <h3>
+    <h3 id="q51">
       Q51. Nginx pods are Running, but the application is unreachable via its
       URL. What do you check?
     </h3>
@@ -1646,7 +1648,7 @@ spec:
       </li>
     </ol>
 
-    <h3>
+    <h3 id="q52">
       Q52. A new version was deployed and fails to start, or the rollout is
       stuck. How do you investigate and recover?
     </h3>
@@ -1682,7 +1684,7 @@ spec:
       bad metrics.
     </p>
 
-    <h3>
+    <h3 id="q53">
       Q53. A microservice can't connect to an external database outside the
       cluster. How do you fix it?
     </h3>
@@ -1717,7 +1719,7 @@ spec:
       EndpointSlices) gives the external database a stable in-cluster name.
     </p>
 
-    <h3>
+    <h3 id="q54">
       Q54. New pods stay Pending with "0/3 nodes are available: Insufficient cpu,
       Insufficient memory". Walk me through it.
     </h3>
@@ -1754,7 +1756,7 @@ spec:
       ReplicaSet events (often a ResourceQuota or admission webhook rejection).
     </p>
 
-    <h3>Q55. A pod is in CrashLoopBackOff. What do you do?</h3>
+    <h3 id="q55">Q55. A pod is in CrashLoopBackOff. What do you do?</h3>
     <p>
       CrashLoopBackOff means the container keeps starting and exiting, and the
       kubelet is backing off restarts (exponentially, up to 5 minutes). It's a
@@ -1785,7 +1787,7 @@ spec:
       </li>
     </ol>
 
-    <h3>
+    <h3 id="q56">
       Q56. Pods are Running but not Ready, or the Service returns intermittent
       503s.
     </h3>
@@ -1814,7 +1816,7 @@ spec:
       <li>Pods being CPU-throttled or OOM-restarting under load.</li>
     </ul>
 
-    <h3>
+    <h3 id="q57">
       Q57. Pods restart during traffic spikes with OOMKilled. Or they get
       Evicted. What's the difference?
     </h3>
@@ -1833,7 +1835,7 @@ spec:
       ephemeral-storage requests/limits, clean up log/temp file growth.
     </p>
 
-    <h3>Q58. ImagePullBackOff / ErrImagePull – what's wrong?</h3>
+    <h3 id="q58">Q58. ImagePullBackOff / ErrImagePull – what's wrong?</h3>
     <ul>
       <li>Typo in image name or tag, or the tag was never pushed.</li>
       <li>
@@ -1860,7 +1862,7 @@ spec:
       registry removes most of these.
     </p>
 
-    <h3>Q59. A node becomes NotReady. What happens to its pods?</h3>
+    <h3 id="q59">Q59. A node becomes NotReady. What happens to its pods?</h3>
     <p>
       The kubelet stops reporting; the node controller marks the node
       NotReady/Unknown and adds a <code>NoExecute</code> taint (<code
@@ -1891,7 +1893,7 @@ spec:
       pressure, network to the API server, expired certificates.
     </p>
 
-    <h3>Q60. How do you deploy to Kubernetes in production? What is GitOps?</h3>
+    <h3 id="q60">Q60. How do you deploy to Kubernetes in production? What is GitOps?</h3>
     <p>
       Not <code>kubectl apply</code> from a laptop. <b>GitOps</b>: the desired
       state of the cluster lives in git; an agent in the cluster (<b>Argo CD</b>

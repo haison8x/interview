@@ -1,0 +1,2339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>K8s Study Guide 5/5 – Production Scenarios</title>
+    <style>
+      :root {
+        --fg: #222;
+        --bg: #fff;
+        --muted: #555;
+        --link: #0b5cad;
+        --code-bg: #f3f3f3;
+        --pre-bg: #f5f5f5;
+        --rule: #ddd;
+        --tldr: #0b5cad;
+        --tldr-bg: #eef4fb;
+        --ex: #2e7d32;
+        --ex-bg: #eef7ee;
+        --warn: #b26a00;
+        --warn-bg: #fdf5e6;
+        --tip: #6a3fa0;
+        --tip-bg: #f4eefa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #ddd;
+          --bg: #1b1b1b;
+          --muted: #aaa;
+          --link: #6db3ff;
+          --code-bg: #2a2a2a;
+          --pre-bg: #2a2a2a;
+          --rule: #444;
+          --tldr: #6db3ff;
+          --tldr-bg: #1f2a36;
+          --ex: #7fcf85;
+          --ex-bg: #1f2c20;
+          --warn: #f0b45a;
+          --warn-bg: #33291a;
+          --tip: #c3a0f0;
+          --tip-bg: #2a2236;
+        }
+      }
+      body {
+        font-family:
+          Segoe UI,
+          system-ui,
+          sans-serif;
+        line-height: 1.65;
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 24px 16px 80px;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      a {
+        color: var(--link);
+      }
+      h1 {
+        font-size: 1.6em;
+      }
+      h2 {
+        margin-top: 2.6em;
+        border-bottom: 2px solid var(--rule);
+        padding-bottom: 4px;
+      }
+      section.q {
+        margin-top: 2.4em;
+        padding-top: 0.6em;
+        border-top: 1px solid var(--rule);
+      }
+      section.q h3 {
+        margin: 0.2em 0 0.6em;
+        font-size: 1.25em;
+      }
+      section.q h4 {
+        margin: 1.6em 0 0.4em;
+        font-size: 1.05em;
+      }
+      code {
+        font-family: Consolas, monospace;
+        background: var(--code-bg);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 0.92em;
+      }
+      pre {
+        background: var(--pre-bg);
+        padding: 12px;
+        overflow-x: auto;
+        border-radius: 4px;
+        line-height: 1.45;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0.8em 0;
+        font-size: 0.95em;
+        display: block;
+        overflow-x: auto;
+      }
+      th,
+      td {
+        border: 1px solid var(--rule);
+        padding: 6px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--pre-bg);
+      }
+      .tldr,
+      .example,
+      .pitfall,
+      .interview {
+        border-left: 4px solid;
+        border-radius: 4px;
+        padding: 8px 14px;
+        margin: 1em 0;
+      }
+      .tldr {
+        border-color: var(--tldr);
+        background: var(--tldr-bg);
+      }
+      .example {
+        border-color: var(--ex);
+        background: var(--ex-bg);
+      }
+      .pitfall {
+        border-color: var(--warn);
+        background: var(--warn-bg);
+      }
+      .interview {
+        border-color: var(--tip);
+        background: var(--tip-bg);
+      }
+      .label {
+        font-weight: 700;
+        margin: 0.2em 0 0.4em;
+      }
+      .tldr .label {
+        color: var(--tldr);
+      }
+      .example .label {
+        color: var(--ex);
+      }
+      .pitfall .label {
+        color: var(--warn);
+      }
+      .interview .label {
+        color: var(--tip);
+      }
+      .example pre,
+      .pitfall pre {
+        background: var(--bg);
+      }
+      .ref {
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+      .intro {
+        color: var(--muted);
+      }
+      nav ol {
+        padding-left: 20px;
+      }
+      nav li {
+        margin: 2px 0;
+      }
+      nav a {
+        text-decoration: none;
+      }
+      nav details {
+        margin: 4px 0;
+      }
+      nav summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .back {
+        display: inline-block;
+        margin-bottom: 8px;
+        text-decoration: none;
+        font-size: 0.95em;
+      }
+      .back:hover {
+        text-decoration: underline;
+      }
+      .src {
+        margin-top: 3em;
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+      .pager {
+        margin: 2.4em 0 0;
+        padding-top: 1em;
+        border-top: 1px solid var(--rule);
+      }
+      .pager a {
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back" href="k8s-study.html">&larr; Study guide contents</a>
+    <h1>Kubernetes Study Guide – Part 5: Production Scenarios</h1>
+    <p class="intro">Questions 50–60 of 60, explained in depth. Short interview answers are on the <a href="k8s.html">Kubernetes interview page</a>.</p>
+    <nav>
+      <ol>
+        <li value="50"><a href="#q50">An application in Kubernetes has become slow. How do you investigate?</a></li>
+        <li value="51"><a href="#q51">Nginx pods are Running, but the application is unreachable via its URL. What do you check?</a></li>
+        <li value="52"><a href="#q52">A new version was deployed and fails to start, or the rollout is stuck. How do you investigate and recover?</a></li>
+        <li value="53"><a href="#q53">A microservice can't connect to an external database outside the cluster. How do you fix it?</a></li>
+        <li value="54"><a href="#q54">New pods stay Pending with "0/3 nodes are available: Insufficient cpu, Insufficient memory". Walk me through it.</a></li>
+        <li value="55"><a href="#q55">A pod is in CrashLoopBackOff. What do you do?</a></li>
+        <li value="56"><a href="#q56">Pods are Running but not Ready, or the Service returns intermittent 503s.</a></li>
+        <li value="57"><a href="#q57">Pods restart during traffic spikes with OOMKilled. Or they get Evicted. What's the difference?</a></li>
+        <li value="58"><a href="#q58">ImagePullBackOff / ErrImagePull – what's wrong?</a></li>
+        <li value="59"><a href="#q59">A node becomes NotReady. What happens to its pods?</a></li>
+        <li value="60"><a href="#q60">How do you deploy to Kubernetes in production? What is GitOps?</a></li>
+      </ol>
+    </nav>
+    <!-- ================================================================ -->
+
+    <section class="q" id="q50">
+      <h3>Q50. An application in Kubernetes has become slow. How do you investigate?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          First narrow the scope: is it every pod or one, every endpoint or one,
+          and when did it start (deploy, traffic spike, node change)? Then check,
+          in order: pod resources (including CPU <b>throttling</b>, not just
+          usage), restarts and probe failures, logs for timeouts, dependencies
+          and DNS, the nodes the pods run on, and whether autoscaling is keeping
+          up. Traces and per-pod latency dashboards usually find the slow hop
+          faster than kubectl.
+        </p>
+      </div>
+
+      <h4>1. Why "slow" is harder than "down"</h4>
+      <p>
+        A crashed pod leaves evidence: an exit code, an event, a restart count.
+        A slow pod usually looks <i>healthy</i> to Kubernetes – it is Running,
+        Ready, and passing probes. Kubernetes only knows about container
+        lifecycle and resources; it has no idea that p99 latency went from 80 ms
+        to 2 s. So the investigation is a process of elimination across layers:
+      </p>
+      <pre><code>user ──► ingress/gateway ──► Service ──► pod (app) ──► dependencies
+                                          │                (DB, cache, APIs, DNS)
+                                          ▼
+                                     node (CPU, memory, disk, network)</code></pre>
+      <p>
+        Every arrow is a place where time can be lost. The goal is to find
+        <b>which hop</b> got slower, not to guess.
+      </p>
+
+      <h4>2. Scope it before touching kubectl</h4>
+      <ul>
+        <li>
+          <b>All pods or one?</b> If only one replica is slow, suspect that pod's
+          node (noisy neighbour, disk pressure) or that pod's state (memory leak,
+          stuck thread pool). If all replicas are slow, suspect a shared cause:
+          a dependency, a deploy, or traffic volume.
+        </li>
+        <li>
+          <b>All endpoints or one?</b> One slow endpoint points at a specific
+          query or downstream call; everything slow points at resources or
+          infrastructure.
+        </li>
+        <li>
+          <b>Since when?</b> Correlate with
+          <code>kubectl rollout history</code>, the GitOps commit log, HPA
+          events and node changes. "It got slow at 14:02, the deploy finished at
+          14:01" solves half the incidents.
+        </li>
+      </ul>
+
+      <h4>3. The diagnostic flow</h4>
+      <pre><code>App is slow
+ │
+ ├─ Recent deploy?  ── yes ──► compare versions; roll back first (<a href="#q52">Q52</a>), investigate after
+ │
+ ├─ kubectl top pods: near CPU limit or throttled?
+ │     └─ yes ──► raise/remove CPU limit (<a href="k8s-study-2-networking.html#q23">Q23</a>) or scale out
+ │
+ ├─ Memory close to limit / restarts / OOMKilled?
+ │     └─ yes ──► GC pressure or leak; see <a href="#q57">Q57</a>
+ │
+ ├─ describe pod: probe failures, pods flapping Ready/NotReady?
+ │     └─ yes ──► fewer pods serving traffic → overload (<a href="#q56">Q56</a>)
+ │
+ ├─ logs: timeouts / connection-pool exhausted to DB or API?
+ │     └─ yes ──► the dependency is slow; check it, not Kubernetes
+ │
+ ├─ DNS slow? (ndots:5, CoreDNS overloaded)
+ │     └─ yes ──► <a href="k8s-study-4-admin.html#q49">Q49</a>
+ │
+ ├─ Nodes: pressure, high load, several replicas on one bad node?
+ │     └─ yes ──► cordon/drain node, add topology spread (<a href="k8s-study-3-advanced.html#q31">Q31</a>)
+ │
+ └─ HPA at maxReplicas or not scaling?
+       └─ yes ──► <a href="k8s-study-2-networking.html#q15">Q15</a></code></pre>
+
+      <h4>4. Commands and what they really tell you</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl top pods --sort-by=cpu</code></td>
+            <td>
+              Current CPU/memory usage from metrics-server (a short average, not
+              history). Shows usage, <b>not</b> throttling – a pod at 400m with a
+              500m limit can still be heavily throttled in bursts.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl top pods --sort-by=memory</code></td>
+            <td>
+              Working-set memory. Compare against the memory limit: a pod
+              living at 95% of its limit spends its time in garbage collection.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe pod &lt;pod&gt;</code></td>
+            <td>
+              Restart count, last termination reason, probe failure events. A
+              rising restart count means users keep hitting cold pods.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl logs &lt;pod&gt; --since=15m</code></td>
+            <td>
+              Look for timeouts, "connection pool exhausted", retries – the app
+              usually logs which dependency is slow.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl exec -it &lt;pod&gt; -- curl -w '%{time_total}\n' -o /dev/null -s http://my-dep</code></td>
+            <td>
+              Measures the latency of one hop from inside the pod's network
+              namespace – isolates the network/dependency from the app.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl top nodes</code> / <code>kubectl describe node &lt;node&gt;</code></td>
+            <td>
+              Node load and conditions (MemoryPressure, DiskPressure,
+              PIDPressure) and which pods share the node.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl get hpa</code></td>
+            <td>
+              Current vs target metric and replica count. <code>REPLICAS</code>
+              equal to <code>MAXPODS</code> means autoscaling has run out of
+              room.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The metric that kubectl cannot show but matters most for "slow but
+        healthy" pods is CPU throttling. In Prometheus:
+      </p>
+      <pre><code># fraction of CFS periods in which the container was throttled
+sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace="shop"}[5m]))
+/
+sum by (pod) (rate(container_cpu_cfs_periods_total{namespace="shop"}[5m]))</code></pre>
+      <p>
+        Values above roughly 0.2–0.3 (throttled in a quarter of all periods)
+        reliably show up as latency spikes.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A checkout API runs 4 replicas with <code>requests.cpu: 500m</code>,
+          <code>limits.cpu: 500m</code>. After a marketing campaign, p99 latency
+          jumps from 120 ms to 1.8 s, but there are no errors and no restarts.
+        </p>
+        <pre><code>$ kubectl top pods -n shop -l app=checkout
+NAME                        CPU(cores)   MEMORY(bytes)
+checkout-7d9f8c6b5-2xk4p    410m         380Mi
+checkout-7d9f8c6b5-8hq2m    430m         395Mi
+checkout-7d9f8c6b5-c7v9n    420m         372Mi
+checkout-7d9f8c6b5-zr5tl    415m         388Mi
+
+$ kubectl get hpa -n shop checkout
+NAME       REFERENCE             TARGETS   MINPODS   MAXPODS   REPLICAS
+checkout   Deployment/checkout   84%/70%   4         4         4</code></pre>
+        <p>
+          Two findings: average CPU is 410–430m – below the 500m limit, so
+          "usage looks fine" – but the throttling ratio is 0.45, meaning the
+          runtime's parallel threads burn the 50 ms quota early in each 100 ms
+          period and then wait. And the HPA wants to scale (84% vs 70% target)
+          but <code>maxReplicas</code> is 4, so it cannot. Fix: raise
+          <code>maxReplicas</code> to 12 and remove the CPU limit (keep the
+          request accurate). p99 returns to 130 ms.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Looking only at average CPU usage and concluding "CPU is fine" while
+            the pod is throttled.
+          </li>
+          <li>
+            Restarting pods "to fix it" – destroys the evidence (heap state,
+            thread dumps) and often only helps for a few minutes.
+          </li>
+          <li>
+            Blaming Kubernetes when the logs show the database is the slow hop.
+            Kubernetes is often just the messenger.
+          </li>
+          <li>
+            Forgetting that <code>kubectl top</code> needs metrics-server and
+            only shows the last short window – use Prometheus/Grafana for
+            history and comparison with "before".
+          </li>
+          <li>
+            Several replicas scheduled on the same overloaded node because there
+            is no topology spread or anti-affinity.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Show method, not a list of commands: "I'd first scope it – all pods or
+          one, all endpoints or one, since when – and check for a recent deploy.
+          Then I'd walk the request path: resource saturation including CPU
+          throttling, restarts and probe failures, the app's logs for slow
+          dependencies, DNS, the nodes, and whether the HPA is maxed out. In
+          practice traces tell me which hop is slow fastest." Likely follow-ups:
+          "Usage is below the limit but it's still slow – why?" (throttling),
+          "How would you prevent this next time?" (SLO alerts on latency, load
+          tests, HPA headroom).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q50">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q51">
+      <h3>
+        Q51. Nginx pods are Running, but the application is unreachable via its
+        URL. What do you check?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Follow the traffic path from the pod outward (or from the user inward)
+          and test each hop separately: the pod itself, the Service (selector,
+          <code>targetPort</code>, endpoints), NetworkPolicies, the
+          Ingress/Gateway route, and finally the outside world – load balancer
+          IP, DNS, firewalls and TLS. <code>kubectl port-forward</code> lets you
+          test each layer in isolation.
+        </p>
+      </div>
+
+      <h4>1. The path a request takes</h4>
+      <pre><code>browser
+  │  DNS: app.example.com → 203.0.113.10
+  ▼
+cloud load balancer (Service type LoadBalancer, external IP 203.0.113.10)
+  │
+  ▼
+ingress / gateway controller pods
+  │  matches host + path → backend Service "nginx", port 80
+  ▼
+Service "nginx" (ClusterIP 10.96.12.34:80)
+  │  EndpointSlice: ready pod IPs, targetPort 8080
+  ▼
+pod 10.244.1.17:8080  ── container listening on 0.0.0.0:8080</code></pre>
+      <p>
+        "Pod is Running" only proves the last box is alive. Any box in between
+        can break the chain, and each one fails with a characteristic symptom.
+        The trick is to <b>bisect</b>: test the middle, then decide which half
+        is broken.
+      </p>
+
+      <h4>2. Test each hop</h4>
+      <table>
+        <thead>
+          <tr><th>Hop / Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl get pods -l app=nginx -o wide</code></td>
+            <td>
+              Are pods <b>Ready</b> (<code>1/1</code>), not just Running? Not
+              Ready pods are never added to the Service.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl port-forward pod/&lt;pod&gt; 8080:8080</code></td>
+            <td>
+              Tunnels through the API server directly to the pod, bypassing
+              Service, policies and ingress. If <code>curl localhost:8080</code>
+              fails here, the problem is the app (wrong port, listening on
+              <code>127.0.0.1</code>).
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl get endpointslices -l kubernetes.io/service-name=nginx</code></td>
+            <td>
+              Lists the pod IPs the Service actually routes to. Empty =
+              selector does not match the pod labels, or no pod is Ready.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl port-forward svc/nginx 8080:80</code></td>
+            <td>
+              Tests Service port → <code>targetPort</code> mapping. Works via pod
+              = fine, fails via Service = port mapping or selector problem.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl run tmp --rm -it --image=busybox -- wget -qO- http://nginx.web</code></td>
+            <td>
+              Tests the Service from another pod through real cluster
+              networking (kube-proxy, NetworkPolicy, DNS) – port-forward skips
+              those.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl get networkpolicy -n web</code></td>
+            <td>
+              If any policy selects the nginx pods for ingress, traffic from the
+              ingress controller's namespace must be explicitly allowed.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe ingress nginx</code> / <code>kubectl describe httproute nginx</code></td>
+            <td>
+              Host, path, backend, class/parent gateway and – for Gateway API –
+              status conditions such as <code>Accepted</code> and
+              <code>ResolvedRefs</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl get svc -n ingress</code></td>
+            <td>
+              Does the controller's LoadBalancer Service have an
+              <code>EXTERNAL-IP</code>, or is it stuck at
+              <code>&lt;pending&gt;</code>?
+            </td>
+          </tr>
+          <tr>
+            <td><code>dig app.example.com</code>, <code>curl -v https://app.example.com</code></td>
+            <td>
+              Outside the cluster: does DNS resolve to that IP, does TLS
+              complete, which status code comes back (404 from the controller =
+              no matching route; 503 = route found but no endpoints).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. The classic mismatches</h4>
+      <pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  selector:
+    app: nginx          # must equal the POD labels, not the Deployment's labels
+  ports:
+    - port: 80          # what clients and the Ingress use
+      targetPort: 8080  # what the container actually listens on
+---
+# pod template in the Deployment
+metadata:
+  labels:
+    app: web            # ← mismatch: Service selects app=nginx → no endpoints
+spec:
+  containers:
+    - name: nginx
+      image: nginxinc/nginx-unprivileged:1.27   # listens on 8080, not 80
+      ports:
+        - containerPort: 8080</code></pre>
+      <p>
+        Note that <code>containerPort</code> is informational – it does not
+        open or change anything. What matters is the port the process really
+        binds and that <code>targetPort</code> matches it.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>The browser shows a 503 from the ingress controller. Bisecting:</p>
+        <pre><code>$ kubectl get pods -n web -l app=nginx
+NAME                     READY   STATUS    RESTARTS   AGE
+nginx-6c8b9d7f4c-4mz2q   1/1     Running   0          12m
+nginx-6c8b9d7f4c-q8wlr   1/1     Running   0          12m
+
+$ kubectl get endpointslices -n web -l kubernetes.io/service-name=nginx
+NAME          ADDRESSTYPE   PORTS     ENDPOINTS                 AGE
+nginx-x7k2p   IPv4          &lt;unset&gt;   &lt;unset&gt;                   12m
+
+$ kubectl get svc nginx -n web -o jsonpath='{.spec.selector}'
+{"app":"nginx","tier":"frontend"}
+
+$ kubectl get pods -n web -l app=nginx --show-labels | tail -1
+nginx-6c8b9d7f4c-q8wlr ... app=nginx,pod-template-hash=6c8b9d7f4c</code></pre>
+        <p>
+          Pods are Ready but the EndpointSlice is empty: the Service selector
+          requires <code>tier=frontend</code>, which the pods don't have. A 503
+          (not 404) already hinted at this – the controller found the route but
+          had no backends. Adding the label to the pod template fixes it within
+          seconds.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Testing only with <code>port-forward</code> and declaring the
+            Service fine – port-forward bypasses kube-proxy and NetworkPolicy.
+          </li>
+          <li>
+            The app binds <code>127.0.0.1</code>: works with
+            <code>kubectl exec ... curl localhost</code>, fails from anywhere
+            else.
+          </li>
+          <li>
+            Missing or wrong <code>ingressClassName</code> – the Ingress is
+            accepted by the API server but no controller picks it up.
+          </li>
+          <li>
+            A default-deny NetworkPolicy in the app namespace that does not
+            allow traffic from the ingress controller's namespace.
+          </li>
+          <li>
+            LoadBalancer stuck in <code>&lt;pending&gt;</code> on bare metal or
+            when the cloud quota for IPs is exhausted.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "I'd test hop by hop: pod directly with port-forward, then the
+          Service – selector, targetPort, and whether the EndpointSlice has
+          addresses – then NetworkPolicies, the Ingress or HTTPRoute, and finally
+          the LoadBalancer IP, DNS, firewall and TLS. The HTTP status narrows it
+          quickly: 404 from the controller means no matching route, 503 means
+          no ready endpoints, a timeout means network or firewall." Follow-ups:
+          "What does port-forward bypass?", "Why might EndpointSlices be empty?"
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q51">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q52">
+      <h3>
+        Q52. A new version was deployed and fails to start, or the rollout is
+        stuck. How do you investigate and recover?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Restore service first, investigate second:
+          <code>kubectl rollout undo</code> (or <code>git revert</code> under
+          GitOps). Then look at the <b>new</b> ReplicaSet's pods to see why they
+          never became available – crash, image pull, readiness, capacity,
+          quota or an admission webhook. After
+          <code>progressDeadlineSeconds</code> the Deployment reports
+          <code>ProgressDeadlineExceeded</code>, but Kubernetes never rolls back
+          by itself.
+        </p>
+      </div>
+
+      <h4>1. What "stuck" means mechanically</h4>
+      <p>
+        During a rolling update (<a href="k8s-study-2-networking.html#q18">Q18</a>) the Deployment
+        controller scales the new ReplicaSet up and the old one down, but only
+        as fast as new pods become <b>available</b> (Ready for
+        <code>minReadySeconds</code>). If new pods never become available, the
+        controller simply stops: <code>maxUnavailable</code> forbids removing
+        more old pods. That is the safety brake – most users keep being served
+        by the old version – but the rollout hangs forever unless someone acts.
+      </p>
+      <pre><code>replicas: 4, maxSurge: 1, maxUnavailable: 0
+
+old RS (v1.4.1): ████  4 ready
+new RS (v1.4.2): ▒     1 created → CrashLoopBackOff → never available
+                 ↑ controller waits here; old pods untouched
+after 600s: condition Progressing=False, reason=ProgressDeadlineExceeded</code></pre>
+      <p>
+        <code>progressDeadlineSeconds</code> (default 600) only <b>reports</b>
+        failure: <code>kubectl rollout status</code> exits non-zero and the
+        condition is set – useful for CI pipelines and alerts. It does not undo
+        anything.
+      </p>
+
+      <h4>2. Recover first</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl rollout status deploy/my-app --timeout=5m</code></td>
+            <td>
+              Blocks until the rollout completes or fails; non-zero exit on
+              failure. Use it as the last CI deploy step.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl rollout undo deploy/my-app</code></td>
+            <td>
+              Copies the previous ReplicaSet's pod template back into the
+              Deployment. The old ReplicaSet still exists (scaled to 0), so it
+              scales back up in seconds – no image rebuild needed.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl rollout history deploy/my-app</code></td>
+            <td>
+              Lists revisions (one per ReplicaSet kept, up to
+              <code>revisionHistoryLimit</code>, default 10).
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl rollout history deploy/my-app --revision=7</code></td>
+            <td>Shows the full pod template of revision 7 – diff it against the current one.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl rollout pause</code> / <code>resume</code></td>
+            <td>
+              Freezes the rollout where it is (for example to investigate one
+              canary pod) without rolling back.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Under GitOps (<a href="#q60">Q60</a>), <code>rollout undo</code> is
+        fought by the GitOps agent: the cluster no longer matches git, so Argo
+        CD or Flux re-applies the broken version. Revert the commit instead.
+      </p>
+
+      <h4>3. Then find the cause</h4>
+      <pre><code>Rollout stuck
+ │
+ ├─ kubectl get rs -l app=my-app        → which RS is new; DESIRED vs READY
+ ├─ kubectl get pods -l app=my-app      → status of the NEW pods:
+ │     ├─ CrashLoopBackOff        → <a href="#q55">Q55</a> (logs --previous, exit code)
+ │     ├─ ImagePullBackOff        → <a href="#q58">Q58</a> (tag, registry, credentials)
+ │     ├─ Running, 0/1 Ready      → <a href="#q56">Q56</a> (readiness probe)
+ │     └─ Pending                 → <a href="#q54">Q54</a> (no room for the surge pod)
+ └─ no new pods at all?
+       └─ kubectl describe rs &lt;new-rs&gt; → quota exceeded / webhook denied</code></pre>
+      <p>
+        That last branch catches people out: if the new pod is rejected at
+        admission (ResourceQuota exceeded, a policy forbids
+        <code>:latest</code>), there is no pod to describe. The error is only in
+        the ReplicaSet's events:
+      </p>
+      <pre><code>$ kubectl describe rs my-app-5f7c9d8b6d | tail -3
+Events:
+  Warning  FailedCreate  replicaset-controller  Error creating: pods "my-app-5f7c9d8b6d-" is
+  forbidden: exceeded quota: team-a-quota, requested: requests.memory=1Gi,
+  used: requests.memory=7680Mi, limited: requests.memory=8Gi</code></pre>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Version 2.3.0 of an API adds a required env variable
+          <code>PAYMENT_URL</code>. The ConfigMap change was forgotten.
+        </p>
+        <pre><code>$ kubectl rollout status deploy/api --timeout=3m
+Waiting for deployment "api" rollout to finish: 1 out of 4 new replicas have been updated...
+error: timed out waiting for the condition
+
+$ kubectl get pods -l app=api
+NAME                   READY   STATUS             RESTARTS     AGE
+api-7b6d5c4f9-6gk2x    1/1     Running            0            2d
+api-7b6d5c4f9-9pl4m    1/1     Running            0            2d
+api-7b6d5c4f9-j3n8c    1/1     Running            0            2d
+api-7b6d5c4f9-x2w7q    1/1     Running            0            2d
+api-84c9f7d6b-tq5zr    0/1     CrashLoopBackOff   4 (30s ago)  3m
+
+$ kubectl logs api-84c9f7d6b-tq5zr --previous | tail -1
+Unhandled exception: Configuration value 'PAYMENT_URL' is missing.</code></pre>
+        <p>
+          Users were never affected: with <code>maxUnavailable: 0</code>, all 4
+          old pods kept serving. The team runs
+          <code>kubectl rollout undo deploy/api</code> to stop the crash loop
+          (and the alert noise), adds the ConfigMap key, and redeploys. The
+          follow-up action: the CI pipeline now fails the deploy when
+          <code>rollout status</code> times out, so nobody has to notice by
+          hand.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Expecting <code>progressDeadlineSeconds</code> to roll back
+            automatically. It doesn't – use Argo Rollouts/Flagger for automatic
+            abort.
+          </li>
+          <li>
+            <code>maxUnavailable</code> &gt; 0 with a broken version: some old
+            pods are removed before the new ones prove themselves, so capacity
+            drops during the incident.
+          </li>
+          <li>
+            A readiness probe that always passes (or none at all): a broken
+            version becomes "available" and replaces everything.
+          </li>
+          <li>
+            Looking at Deployment events only – quota and webhook rejections are
+            on the ReplicaSet.
+          </li>
+          <li>
+            <code>kubectl rollout undo</code> under GitOps, then wondering why
+            the broken version comes back.
+          </li>
+          <li>
+            Database migrations that are not backward compatible – rolling back
+            the code doesn't roll back the schema.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "First mitigate: roll back – <code>rollout undo</code>, or a git revert
+          if we use GitOps. Then investigate: compare the revisions, look at the
+          new ReplicaSet's pods – crash, image pull, readiness, Pending – and
+          the ReplicaSet events for quota or webhook rejections. Note that
+          Kubernetes only marks ProgressDeadlineExceeded; it never rolls back on
+          its own, so I'd make CI fail on rollout status and consider
+          progressive delivery." Follow-ups: "Why weren't users affected?"
+          (readiness + maxUnavailable), "What about the database schema?"
+          (expand/contract migrations).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q52">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q53">
+      <h3>
+        Q53. A microservice can't connect to an external database outside the
+        cluster. How do you fix it?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Separate the layers and test each from inside the pod: DNS resolution,
+          then TCP connectivity, then the application layer (credentials, TLS,
+          connection limits). In between sit egress NetworkPolicies inside the
+          cluster and firewalls/security groups outside it – which see the
+          node or NAT gateway IP, not the pod IP.
+        </p>
+      </div>
+
+      <h4>1. What happens when a pod calls an external host</h4>
+      <pre><code>pod (10.244.3.9)
+  │ 1. resolve db.example.com  → CoreDNS → upstream DNS (corporate / cloud)
+  │ 2. TCP SYN to 192.0.2.50:5432
+  ▼
+egress NetworkPolicy check (CNI)            ← can drop DNS or the DB port
+  ▼
+node: SNAT 10.244.3.9 → node IP 10.0.1.12   ← most CNIs masquerade pod IPs
+  ▼
+NAT gateway (private clusters) → 198.51.100.7
+  ▼
+database firewall / security group           ← must allow 10.0.1.0/24 or 198.51.100.7
+  ▼
+database: TLS handshake, authentication, max_connections</code></pre>
+      <p>
+        The error message usually tells you the layer: "could not translate
+        host name" (DNS), "connection timed out" (packets dropped – policy,
+        firewall, routing), "connection refused" (reached the host, nothing
+        listening on that port), "password authentication failed" / "SSL
+        required" / "too many connections" (application layer).
+      </p>
+
+      <h4>2. Test each layer from inside the pod</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl exec -it &lt;pod&gt; -- nslookup db.example.com</code></td>
+            <td>
+              Resolves through the pod's <code>resolv.conf</code> (CoreDNS,
+              search domains). Failure → CoreDNS forwarding or blocked port 53.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl exec -it &lt;pod&gt; -- nc -zv db.example.com 5432</code></td>
+            <td>
+              Pure TCP connect, no protocol. Success means network and firewalls
+              are fine; the problem is in the app layer.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl debug -it &lt;pod&gt; --image=nicolaka/netshoot --target=app</code></td>
+            <td>
+              Adds an ephemeral container with network tools sharing the pod's
+              network namespace – for distroless images without
+              <code>nc</code>/<code>nslookup</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl get networkpolicy -n &lt;ns&gt; -o yaml</code></td>
+            <td>
+              Look for policies with <code>policyTypes: [Egress]</code> that
+              select the pod. Anything not allowed is dropped silently (timeout).
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl run tmp --rm -it --image=busybox --overrides='{"spec":{"hostNetwork":true}}' -- nc -zv 192.0.2.50 5432</code></td>
+            <td>
+              Same test from the node's network namespace. Works from node but
+              not from pod → it's NetworkPolicy/CNI; fails from both → it's
+              outside the cluster.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Fixes by layer</h4>
+      <p><b>Egress NetworkPolicy</b> – allow DNS and the database explicitly:</p>
+      <pre><code>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: orders-egress
+  namespace: shop
+spec:
+  podSelector:
+    matchLabels:
+      app: orders
+  policyTypes: ["Egress"]
+  egress:
+    - to:                       # DNS to CoreDNS
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    - to:                       # the external database
+        - ipBlock:
+            cidr: 192.0.2.50/32
+      ports:
+        - { protocol: TCP, port: 5432 }</code></pre>
+      <p>
+        <b>Outside the cluster</b> – the database firewall must allow the
+        <i>source IP it actually sees</i>: node subnet, or the NAT gateway's
+        public IP. Allowing the pod CIDR does nothing when pods are SNATed.
+        With cloud VPC CNIs (pods get VPC IPs) the pod subnet may be the right
+        thing to allow – know your CNI.
+      </p>
+      <p>
+        <b>A stable in-cluster name</b> – so apps don't hard-code external
+        hosts:
+      </p>
+      <pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: orders-db
+  namespace: shop
+spec:
+  type: ExternalName
+  externalName: db.example.com   # DNS CNAME; no proxying, no port mapping</code></pre>
+      <p>
+        If the database only has an IP, use a Service without a selector plus a
+        manually created EndpointSlice (labelled
+        <code>kubernetes.io/service-name: orders-db</code>).
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          After a security hardening sprint, the orders service logs
+          <code>timeout expired</code> connecting to PostgreSQL on a VM.
+        </p>
+        <pre><code>$ kubectl exec -it orders-5d8c7b9f6-kq2lp -- nslookup pg.internal.example.com
+;; connection timed out; no servers could be reached
+
+$ kubectl get networkpolicy -n shop
+NAME                  POD-SELECTOR   AGE
+default-deny-egress   &lt;none&gt;         2h</code></pre>
+        <p>
+          DNS itself times out – the new <code>default-deny-egress</code> policy
+          blocks port 53 too. After adding the DNS rule, <code>nslookup</code>
+          works, but <code>nc -zv pg.internal.example.com 5432</code> still
+          times out. Adding the <code>ipBlock</code> rule for the database fixes
+          it. Two separate problems with the same symptom – which is why you test
+          layer by layer instead of stopping at the first fix.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Using <code>curl http://db:5432</code> to test a database – it's not
+            HTTP; use <code>nc -zv</code> (or the database client).
+          </li>
+          <li>
+            Allowing the pod CIDR on the database firewall when traffic is
+            SNATed to the node/NAT IP.
+          </li>
+          <li>Egress default-deny without a DNS exception.</li>
+          <li>
+            New nodes from autoscaling come up in a different subnet that the
+            database firewall doesn't allow – works on some pods, fails on
+            others.
+          </li>
+          <li>
+            Treating "too many connections" as a network issue: 30 replicas ×
+            a pool of 20 = 600 connections against a database allowing 200.
+            Scale-out made it worse.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "I'd test from inside the pod, layer by layer: DNS with nslookup, TCP
+          with nc, then the app layer – credentials, TLS, connection limits. The
+          error type tells me where to look: name resolution, timeout, refused
+          or auth. Inside the cluster I'd check egress NetworkPolicies,
+          including DNS; outside, that the database firewall allows the node or
+          NAT gateway IP, since pods are usually SNATed." Follow-ups: "Works
+          from the node but not from the pod?" (NetworkPolicy/CNI), "How do you
+          give it a cluster DNS name?" (ExternalName).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q53">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q54">
+      <h3>
+        Q54. New pods stay Pending with "0/3 nodes are available: Insufficient
+        cpu, Insufficient memory". Walk me through it.
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          The scheduler could not find a node whose <b>unreserved allocatable</b>
+          capacity fits the pod's <b>requests</b>. Scheduling is based on
+          requests, not on actual usage, so nodes can look idle in
+          <code>kubectl top</code> and still be "full". Fix by right-sizing
+          requests, freeing capacity, or adding nodes – and if an autoscaler
+          exists, find out why it didn't add them.
+        </p>
+      </div>
+
+      <h4>1. How the scheduler decides</h4>
+      <p>
+        For each pending pod, the scheduler runs a <b>filter</b> phase (which
+        nodes are feasible?) and a <b>score</b> phase (which feasible node is
+        best?). The resource filter is plain arithmetic:
+      </p>
+      <pre><code>node allocatable  = capacity − kube-reserved − system-reserved − eviction threshold
+free for scheduling = allocatable − Σ requests of pods already on the node
+
+pod fits  ⇔  pod.requests.cpu ≤ free cpu  AND  pod.requests.memory ≤ free memory</code></pre>
+      <p>
+        Every node that fails a filter is counted in the message, grouped by
+        reason. <code>0/3 nodes are available: 1 node(s) had untolerated taint
+        {node-role.kubernetes.io/control-plane: }, 2 Insufficient cpu</code>
+        means: of 3 nodes, 1 was excluded by a taint and 2 lacked CPU. Read the
+        whole line – it is a complete explanation. The message often ends with a
+        <code>preemption:</code> part saying whether evicting lower-priority
+        pods would help.
+      </p>
+
+      <h4>2. Requests vs usage – why "the cluster looks empty"</h4>
+      <pre><code>$ kubectl top nodes
+NAME     CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
+node-1   820m         21%    5100Mi          34%
+node-2   760m         19%    4900Mi          33%
+
+$ kubectl describe node node-1 | grep -A6 "Allocated resources"
+Allocated resources:
+  Resource           Requests       Limits
+  --------           --------       ------
+  cpu                3800m (97%)    6 (153%)
+  memory             13Gi (88%)     18Gi (122%)</code></pre>
+      <p>
+        Actual usage is 21% but 97% of CPU is <b>reserved</b> by requests. To the
+        scheduler, this node is full. That is by design: requests are a promise
+        that the pod can use that much when it needs to. The usual root cause is
+        inflated requests – teams copy <code>cpu: 1</code> into every
+        Deployment "to be safe".
+      </p>
+
+      <h4>3. Diagnostic flow</h4>
+      <pre><code>Pod Pending
+ │
+ ├─ kubectl describe pod → Events → FailedScheduling message
+ │     ├─ Insufficient cpu/memory ─► compare pod requests vs node "Allocated resources"
+ │     │      ├─ pod request bigger than ANY node's allocatable?
+ │     │      │      └─ it can never fit → reduce request or add a bigger node type
+ │     │      └─ nodes full of reservations?
+ │     │             ├─ right-size requests (kubectl top pods -A vs requests)
+ │     │             ├─ scale down non-essential workloads
+ │     │             └─ add nodes / check autoscaler events
+ │     ├─ untolerated taint        ─► toleration missing (<a href="k8s-study-3-advanced.html#q31">Q31</a>)
+ │     ├─ node affinity/selector   ─► labels or rules too strict
+ │     ├─ unbound PVC              ─► storage (<a href="k8s-study-1-basics.html#q11">Q11</a>)
+ │     └─ Too many pods            ─► max pods per node / CNI IP exhaustion
+ │
+ └─ no pod at all? ─► ReplicaSet events: quota / admission rejection (<a href="#q52">Q52</a>)</code></pre>
+
+      <h4>4. Commands and what they really tell you</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl describe pod &lt;pod&gt;</code></td>
+            <td>Shows the scheduler's <code>FailedScheduling</code> event with per-reason node counts.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe node &lt;node&gt;</code></td>
+            <td>
+              "Allocatable" and "Allocated resources" – sums of requests, which
+              is what the scheduler uses.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl top pods -A --sort-by=cpu</code></td>
+            <td>
+              Real usage per pod. Compare with requests to find over-reserving
+              workloads (requesting 1 CPU, using 50m).
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl get pods -A --field-selector=status.phase=Pending</code></td>
+            <td>How widespread the problem is – one pod or the whole cluster.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl get events -A --field-selector=reason=NotTriggerScaleUp</code></td>
+            <td>
+              Cluster Autoscaler's explanation of why it did <b>not</b> add a
+              node (max size reached, no node group fits the pod, …).
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl scale deploy/&lt;name&gt; --replicas=0</code></td>
+            <td>
+              Emergency: frees the requests of a non-critical workload
+              immediately.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          3 worker nodes, each 4 vCPU / 16 GiB with allocatable 3.8 CPU /
+          14.5 GiB. A new <code>report-worker</code> Deployment requests
+          <code>cpu: 2</code>, <code>memory: 4Gi</code> per pod.
+        </p>
+        <table>
+          <thead>
+            <tr><th>Node</th><th>Already requested</th><th>Free CPU</th><th>Fits 2 CPU?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>node-1</td><td>2.6 CPU</td><td>1.2</td><td>No</td></tr>
+            <tr><td>node-2</td><td>2.1 CPU</td><td>1.7</td><td>No</td></tr>
+            <tr><td>node-3</td><td>2.9 CPU</td><td>0.9</td><td>No</td></tr>
+          </tbody>
+        </table>
+        <p>
+          Total free CPU is 3.8 – more than enough in aggregate – but no
+          <i>single</i> node has 2 free. That is fragmentation: a pod must fit on
+          one node. <code>kubectl top</code> shows the worker really uses
+          ~300m. Lowering the request to <code>cpu: 500m</code> (with a VPA
+          recommendation as evidence) lets all replicas schedule without adding
+          nodes. Had the request been genuinely 2 CPU, the right answer would be
+          a node pool with larger instances.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>Using <code>kubectl top</code> to judge free capacity – the scheduler uses requests.</li>
+          <li>
+            Comparing with node <i>capacity</i> instead of <i>allocatable</i>
+            (system reservations and DaemonSets eat into it).
+          </li>
+          <li>
+            Ignoring fragmentation – aggregate free capacity doesn't help if no
+            single node has room.
+          </li>
+          <li>
+            Autoscaler "not working" when it is at its max node count, or when no
+            node group has an instance type big enough for the pod.
+          </li>
+          <li>
+            Fixing it by removing requests entirely – pods become BestEffort,
+            nodes get overpacked, and you trade Pending for evictions (<a href="#q57">Q57</a>).
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "The scheduler places pods by requests against allocatable, not by
+          usage. So I'd read the FailedScheduling event, compare the pod's
+          requests with each node's Allocated resources, and look for inflated
+          requests across the cluster. Short term: scale down non-essential
+          workloads or add nodes; if there's an autoscaler, check its events for
+          why it didn't scale. Long term: right-size requests from real usage
+          and use priority classes so critical pods can preempt." Follow-ups:
+          "Nodes are at 20% CPU – how can pods be Pending?", "What is
+          preemption?"
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q54">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q55">
+      <h3>Q55. A pod is in CrashLoopBackOff. What do you do?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          CrashLoopBackOff is a symptom: the container keeps exiting and the
+          kubelet waits longer and longer between restarts. Get the logs of the
+          <b>previous</b> (crashed) instance, read the last exit code and reason
+          in <code>kubectl describe</code>, check for liveness-probe kills and
+          missing config, and if needed get inside with
+          <code>kubectl debug</code>.
+        </p>
+      </div>
+
+      <h4>1. What the kubelet is doing</h4>
+      <p>
+        With <code>restartPolicy: Always</code> (the only option for Deployment
+        pods), the kubelet restarts a container every time it exits – even with
+        exit code 0. To avoid hammering the node, it backs off exponentially:
+      </p>
+      <pre><code>crash → wait 10s → restart → crash → wait 20s → 40s → 80s → 160s → 300s (cap) …
+the back-off resets once the container has run successfully for 10 minutes</code></pre>
+      <p>
+        While waiting, the pod's status shows <code>CrashLoopBackOff</code>.
+        Between restarts the container briefly shows <code>Running</code> or
+        <code>Error</code>, which is why the status seems to flicker. The pod
+        object stays on the same node – this is a <b>container</b> restart, not
+        a reschedule.
+      </p>
+
+      <h4>2. Read the exit code</h4>
+      <pre><code>$ kubectl describe pod api-84c9f7d6b-tq5zr
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1
+      Started:      Sat, 14 Nov 2026 10:02:11 +0000
+      Finished:     Sat, 14 Nov 2026 10:02:13 +0000
+    Restart Count:  6</code></pre>
+      <table>
+        <thead>
+          <tr><th>Exit code / reason</th><th>What it usually means</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1 (or other app code)</td><td>The application threw/exited on an error – the logs say why.</td></tr>
+          <tr><td>0 / Completed</td><td>The process finished. A web server shouldn't "finish": wrong command, or it daemonised into the background.</td></tr>
+          <tr><td>137 + <code>OOMKilled</code></td><td>Exceeded the memory limit (<a href="#q57">Q57</a>).</td></tr>
+          <tr><td>137 without OOMKilled</td><td>SIGKILL from outside – very often a failed liveness probe after the grace period.</td></tr>
+          <tr><td>143</td><td>Exited on SIGTERM (stopped by the kubelet, e.g. liveness probe, and handled it).</td></tr>
+          <tr><td>126</td><td>Command found but not executable (permissions, non-root user can't run it).</td></tr>
+          <tr><td>127</td><td>Command not found – wrong <code>command</code>/entrypoint, missing binary in a slim image.</td></tr>
+        </tbody>
+      </table>
+      <p>
+        "Started" and "Finished" two seconds apart = a crash on startup (config,
+        dependency). Minutes apart = a runtime crash or a liveness kill.
+      </p>
+
+      <h4>3. Commands</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl logs &lt;pod&gt; --previous</code></td>
+            <td>
+              Logs of the last terminated instance. Without
+              <code>--previous</code> you get the new instance, which may have
+              printed nothing yet.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe pod &lt;pod&gt;</code></td>
+            <td>Last State (exit code, reason, timestamps) and events such as <code>Liveness probe failed</code>.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl get events --field-selector involvedObject.name=&lt;pod&gt;</code></td>
+            <td>Only that pod's events, in order.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl debug &lt;pod&gt; -it --copy-to=dbg --container=app -- sh</code></td>
+            <td>
+              Creates a copy of the pod with the container's command replaced by
+              a shell, so you can inspect files and env and run the real command
+              by hand.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl debug -it &lt;pod&gt; --image=busybox --target=app</code></td>
+            <td>
+              Ephemeral debug container sharing the process namespace – useful
+              when the container stays up long enough between crashes.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>4. The usual root causes</h4>
+      <ul>
+        <li>
+          <b>Configuration:</b> missing ConfigMap/Secret key, wrong env value,
+          bad connection string. The app throws on startup – exit 1 within
+          seconds.
+        </li>
+        <li>
+          <b>A dependency treated as fatal:</b> the app exits if the database
+          isn't reachable at startup. Better: retry with backoff and report
+          not-Ready.
+        </li>
+        <li>
+          <b>Liveness probe too aggressive:</b> a slow starter is killed before
+          it is up – it looks exactly like a crash. Use a startup probe
+          (<a href="k8s-study-2-networking.html#q17">Q17</a>).
+        </li>
+        <li>
+          <b>Permissions:</b> running as non-root with a file or directory owned
+          by root, or a read-only root filesystem the app tries to write to.
+        </li>
+        <li>
+          <b>Wrong architecture:</b> amd64 image on arm64 nodes –
+          <code>exec format error</code> in the logs.
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <pre><code>$ kubectl get pods -l app=search
+NAME                      READY   STATUS             RESTARTS        AGE
+search-6f9c8d7b5-hv2qk    0/1     CrashLoopBackOff   7 (2m10s ago)   14m
+
+$ kubectl logs search-6f9c8d7b5-hv2qk --previous | tail -2
+Started search service, warming index cache…
+Loading 2.1 GB index into memory
+
+$ kubectl describe pod search-6f9c8d7b5-hv2qk | grep -E "Reason|Exit|Liveness"
+      Reason:       Error
+      Exit Code:    137
+  Warning  Unhealthy  Liveness probe failed: Get "http://10.244.2.8:8080/healthz": context deadline exceeded</code></pre>
+        <p>
+          Exit 137 but no <code>OOMKilled</code>, and liveness failures in the
+          events: the app needs ~90 s to load its index, but the liveness probe
+          (<code>initialDelaySeconds: 15</code>, <code>failureThreshold: 3</code>,
+          <code>periodSeconds: 10</code>) kills it after ~45 s. Every restart
+          starts the load again – an endless loop. Adding a
+          <code>startupProbe</code> with <code>failureThreshold: 30</code> and
+          <code>periodSeconds: 5</code> (up to 150 s to start) fixes it without
+          weakening the liveness probe for normal operation.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>Reading the current logs instead of <code>--previous</code> and seeing nothing.</li>
+          <li>
+            Assuming every 137 is OOM – check the <code>Reason</code> field; a
+            liveness kill also ends with SIGKILL.
+          </li>
+          <li>
+            "Fixing" it by deleting the pod – the replacement crashes the same
+            way.
+          </li>
+          <li>
+            Removing the liveness probe entirely instead of adding a startup
+            probe.
+          </li>
+          <li>
+            Logs that go to a file inside the container instead of stdout –
+            <code>kubectl logs</code> shows nothing useful.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "CrashLoopBackOff just means the container keeps exiting and the
+          kubelet is backing off restarts, up to five minutes. I'd get
+          <code>logs --previous</code>, then the Last State in describe – the
+          exit code and reason tell me whether it's an app error, OOM, a
+          liveness kill, or a missing binary. Then config, dependencies and
+          probes. If I need to look inside, kubectl debug with a copy of the pod
+          and a shell." Follow-ups: "Exit code 137 but not OOMKilled?", "Why
+          does it restart even with exit code 0?"
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q55">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q56">
+      <h3>
+        Q56. Pods are Running but not Ready, or the Service returns intermittent
+        503s.
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Running but not Ready means the readiness probe is failing, so the pod
+          is kept out of the Service's endpoints – describe the pod to see the
+          probe error. Intermittent 503s mean that, at some moments, a request
+          hits no healthy backend: pods flapping between Ready and NotReady,
+          pods shutting down during deploys, one bad replica, or proxy timeouts
+          and limits.
+        </p>
+      </div>
+
+      <h4>1. Running vs Ready</h4>
+      <table>
+        <thead>
+          <tr><th>State</th><th>Meaning</th><th>Gets traffic?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Running</td><td>At least one container process is up.</td><td>Not necessarily</td></tr>
+          <tr><td>Ready (<code>1/1</code>)</td><td>All containers pass readiness; the pod condition <code>Ready=True</code>.</td><td>Yes – IP is in the EndpointSlice as ready</td></tr>
+          <tr><td>Running, <code>0/1</code></td><td>Process alive, readiness failing.</td><td>No</td></tr>
+        </tbody>
+      </table>
+      <p>
+        A failing readiness probe never restarts the container – that is
+        liveness. The pod just waits, out of rotation, until the probe passes.
+        So "Running 0/1 for an hour" is readiness, not a crash.
+      </p>
+      <pre><code>$ kubectl describe pod web-7c9d8f6b5-m2x8k | grep -A2 Readiness
+    Readiness:  http-get http://:8080/ready delay=0s timeout=1s period=5s #success=1 #failure=3
+  Warning  Unhealthy  kubelet  Readiness probe failed: Get "http://10.244.1.23:8080/ready":
+  dial tcp 10.244.1.23:8080: connect: connection refused</code></pre>
+      <p>Interpreting the probe error:</p>
+      <ul>
+        <li>
+          <code>connection refused</code> – nothing listens on that port/IP:
+          wrong port, or the app binds <code>127.0.0.1</code> (the kubelet probes
+          the pod IP).
+        </li>
+        <li>
+          <code>context deadline exceeded</code> – the endpoint is too slow for
+          <code>timeoutSeconds</code> (default 1 s!), often under load or during
+          GC.
+        </li>
+        <li>
+          <code>HTTP probe failed with statuscode: 503</code> – the app answers
+          "not ready", typically because its readiness checks a dependency
+          that is down.
+        </li>
+      </ul>
+
+      <h4>2. Where intermittent 503s come from</h4>
+      <pre><code>Intermittent 503s
+ │
+ ├─ only during deploys / scale-down?
+ │     └─ graceful-shutdown race: pod gets SIGTERM before routing is updated (<a href="k8s-study-3-advanced.html#q35">Q35</a>)
+ │
+ ├─ kubectl get pods -w: pods toggling 1/1 ↔ 0/1 under load?
+ │     └─ readiness probe on the edge of its 1s timeout → capacity collapses
+ │
+ ├─ errors concentrated on one pod?  (per-pod metrics / access logs)
+ │     └─ one bad replica: bad node, stuck thread pool, stale cache → delete it, investigate
+ │
+ ├─ RESTARTS increasing?
+ │     └─ OOM / liveness kills (<a href="#q57">Q57</a>, <a href="#q55">Q55</a>)
+ │
+ └─ none of the above?
+       └─ ingress/gateway: upstream timeout, max connections, keep-alive mismatch</code></pre>
+      <p>
+        The flapping case is a nasty feedback loop: under load, one pod's
+        <code>/ready</code> takes longer than 1 s → it's removed → the
+        remaining pods get more load → their probes time out too → for a few
+        seconds there are zero endpoints and the proxy returns 503.
+      </p>
+
+      <h4>3. Commands</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl get pods -l app=web -w</code></td>
+            <td>Watches READY changes live – flapping is obvious within a minute under load.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl get endpointslices -l kubernetes.io/service-name=web -o yaml</code></td>
+            <td>Per-endpoint <code>conditions.ready</code>, <code>serving</code>, <code>terminating</code> – what the proxies actually see.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe pod &lt;pod&gt;</code></td>
+            <td>Probe definition and failure messages.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl get events --field-selector reason=Unhealthy</code></td>
+            <td>All probe failures in the namespace – reveals whether it's one pod or all.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl logs -n &lt;ingress-ns&gt; &lt;controller-pod&gt;</code></td>
+            <td>Proxy-side reason: "no healthy upstream", "upstream timed out", connection reset.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          An API with 6 replicas returns ~2% 503s at peak traffic, never at
+          night. Readiness probe: <code>/ready</code>, <code>timeoutSeconds: 1</code>,
+          <code>failureThreshold: 1</code>; and <code>/ready</code> runs a
+          <code>SELECT 1</code> against the database.
+        </p>
+        <pre><code>$ kubectl get pods -l app=api -w
+api-5c7d9-2kq8p   1/1   Running   0   3h
+api-5c7d9-2kq8p   0/1   Running   0   3h     ← probe timed out at peak
+api-5c7d9-9vt4x   0/1   Running   0   3h
+api-5c7d9-2kq8p   1/1   Running   0   3h
+api-5c7d9-9vt4x   1/1   Running   0   3h</code></pre>
+        <p>
+          At peak, the DB connection pool is busy, <code>SELECT 1</code> waits
+          for a connection, the probe exceeds 1 s, and a single failure removes
+          the pod. Fixes: readiness checks only the process's own ability to
+          serve (no DB round-trip), <code>timeoutSeconds: 3</code>,
+          <code>failureThreshold: 3</code>. The 503s disappear and – as a bonus
+          – the database receives fewer probe queries.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Leaving <code>timeoutSeconds</code> at its default of 1 s for an
+            endpoint that does real work.
+          </li>
+          <li>
+            <code>failureThreshold: 1</code> – a single slow GC pause takes a pod
+            out of rotation.
+          </li>
+          <li>
+            Readiness that checks shared dependencies: when the dependency blips,
+            <i>all</i> pods go NotReady at once and the Service has zero
+            endpoints.
+          </li>
+          <li>
+            App listening on <code>localhost</code> – the probe (and the Service)
+            uses the pod IP.
+          </li>
+          <li>
+            Blaming Kubernetes for 503s that only happen during deploys – that's
+            the app's shutdown handling.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Running but not Ready is always the readiness probe – describe shows
+          why: connection refused, timeout or a non-2xx status. For intermittent
+          503s I'd ask when they happen: only during deploys points to the
+          shutdown race; under load points to probes timing out and pods
+          flapping; one pod points to a bad replica; otherwise the proxy's
+          timeouts and limits. I'd watch READY live and look at the EndpointSlice
+          conditions." Follow-ups: "Does a failing readiness probe restart the
+          container?" (no), "Should readiness check the database?"
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q56">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q57">
+      <h3>
+        Q57. Pods restart during traffic spikes with OOMKilled. Or they get
+        Evicted. What's the difference?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          <b>OOMKilled</b> is about the <b>container</b>: it used more memory
+          than its own limit, the kernel killed it, and the kubelet restarts it
+          in the same pod on the same node. <b>Evicted</b> is about the
+          <b>node</b>: it ran short of memory, disk or PIDs, so the kubelet
+          removed whole pods – ranked by QoS and usage above requests – and
+          their controllers recreate them elsewhere.
+        </p>
+      </div>
+
+      <h4>1. Side by side</h4>
+      <table>
+        <thead>
+          <tr><th></th><th>OOMKilled</th><th>Evicted</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Who acts</td><td>Linux kernel OOM killer (cgroup limit)</td><td>kubelet (node-pressure eviction)</td></tr>
+          <tr><td>Trigger</td><td>Container memory ≥ its <code>limits.memory</code></td><td>Node below an eviction threshold (e.g. <code>memory.available&lt;100Mi</code>, <code>nodefs.available&lt;10%</code>)</td></tr>
+          <tr><td>Scope</td><td>One container</td><td>Whole pod</td></tr>
+          <tr><td>What happens next</td><td>Container restarted in place; RESTARTS +1</td><td>Pod phase <code>Failed</code>, reason <code>Evicted</code>; a new pod is created (possibly elsewhere)</td></tr>
+          <tr><td>Can happen within limits?</td><td>No – by definition over the limit</td><td>Yes – a pod well within its limit can be evicted</td></tr>
+          <tr><td>Main fix</td><td>Right-size the limit or fix the leak/spike</td><td>Realistic requests, ephemeral-storage limits, node sizing</td></tr>
+        </tbody>
+      </table>
+
+      <h4>2. How each looks</h4>
+      <pre><code>$ kubectl get pods
+NAME                     READY   STATUS      RESTARTS      AGE
+api-7f8c9d6b4-x2kq9      1/1     Running     5 (3m ago)    2h      ← OOMKilled, restarted in place
+worker-5d6c7b8f9-n4r7t   0/1     Evicted     0             41m     ← evicted pod object left behind
+worker-5d6c7b8f9-q9z2m   1/1     Running     0             40m     ← its replacement
+
+$ kubectl describe pod api-7f8c9d6b4-x2kq9 | grep -A3 "Last State"
+    Last State:     Terminated
+      Reason:       OOMKilled
+      Exit Code:    137
+
+$ kubectl describe pod worker-5d6c7b8f9-n4r7t | grep -E "Status|Reason|Message"
+Status:   Failed
+Reason:   Evicted
+Message:  The node was low on resource: memory. Threshold quantity: 100Mi, available: 87Mi.
+          Container worker was using 2.9Gi, request is 512Mi, has larger consumption of memory.</code></pre>
+      <p>
+        The eviction message is gold: it names the resource, the threshold, and
+        how far the evicted container was above its request.
+      </p>
+
+      <h4>3. Eviction order</h4>
+      <p>When a node is under memory pressure, the kubelet ranks pods by:</p>
+      <ol>
+        <li>Whether usage exceeds requests (pods above their requests go first).</li>
+        <li>Pod priority (lower priority first).</li>
+        <li>How far usage is above requests.</li>
+      </ol>
+      <p>
+        In practice: BestEffort pods (no requests – any usage is "above") go
+        first, then Burstable pods using far more than they requested.
+        Guaranteed pods (requests = limits) using no more than their requests
+        are the last to go. That is why <b>accurate memory requests</b> are the
+        best protection against eviction (<a href="k8s-study-2-networking.html#q21">Q21</a>).
+      </p>
+      <p>
+        Disk pressure works the same way: logs, <code>emptyDir</code> volumes
+        and the writable container layer count as ephemeral storage. A pod
+        writing large temp files can get the node into DiskPressure and get
+        evicted – or other pods evicted with it. Set
+        <code>requests/limits.ephemeral-storage</code>.
+      </p>
+
+      <h4>4. Why OOMs happen "only during spikes"</h4>
+      <ul>
+        <li>
+          Per-request memory: large request bodies, file uploads buffered in
+          memory, big query results – 10× traffic = 10× in-flight memory.
+        </li>
+        <li>
+          Unbounded caches or queues that grow with traffic and never shrink.
+        </li>
+        <li>
+          The runtime not sizing itself to the container: modern .NET and JVM
+          read the cgroup limit, but hard-coded heap flags (e.g.
+          <code>-Xmx</code> larger than the limit) or old runtimes don't.
+          Native memory, thread stacks and tmpfs-backed <code>emptyDir</code>
+          (<code>medium: Memory</code>) also count against the limit.
+        </li>
+        <li>
+          The limit was set from average usage, with no headroom for peaks.
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A node has 16 GiB, allocatable 14.5 GiB. It runs an API (Guaranteed,
+          2 Gi request = limit), and 6 report workers, each Burstable with
+          <code>requests.memory: 512Mi</code>, <code>limits.memory: 4Gi</code>.
+          The scheduler sees 2 + 6 × 0.5 = 5 Gi reserved – plenty of room.
+        </p>
+        <p>
+          At month-end all workers process large reports at once and each grows
+          to 2.5 Gi: 2 + 6 × 2.5 = 17 Gi. None exceeds its own 4 Gi limit, so
+          there is <b>no OOMKill</b> – but the node runs out of memory. The
+          kubelet hits <code>memory.available&lt;100Mi</code> and evicts the
+          workers that are furthest above their 512 Mi request. The API, using
+          exactly its request, survives.
+        </p>
+        <p>
+          Fix: set the workers' requests to their real peak (2.5 Gi) so the
+          scheduler spreads them across nodes, and lower the limit to ~3 Gi.
+          Overcommit (limit ≫ request) is exactly what makes eviction possible.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Treating both as "out of memory, raise the limit". For eviction,
+            raising the limit makes it worse – the fix is requests.
+          </li>
+          <li>
+            Leaving thousands of Evicted pod objects around – they are kept for
+            inspection until garbage-collected; clean up with
+            <code>kubectl delete pods --field-selector=status.phase=Failed</code>.
+          </li>
+          <li>
+            Memory request far below limit for memory-hungry apps – the common
+            advice is memory request = limit.
+          </li>
+          <li>Forgetting ephemeral storage: DiskPressure evictions caused by logs or temp files.</li>
+          <li>
+            Monitoring only <code>kubectl top</code>: it shows working-set
+            memory at one point in time and misses the spike that triggered the
+            kill.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "OOMKilled is the container exceeding its own memory limit – the
+          kernel kills it, exit 137, the kubelet restarts it in place. Eviction
+          is the node running low on memory, disk or PIDs – the kubelet removes
+          pods, BestEffort first, then those furthest above their requests, and
+          they're recreated elsewhere. So OOMs are fixed with the limit or the
+          app; evictions with accurate requests so the scheduler doesn't
+          overpack nodes." Follow-ups: "Can a pod be evicted while under its
+          limit?" (yes), "Which QoS class is safest?" (Guaranteed).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q57">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q58">
+      <h3>Q58. ImagePullBackOff / ErrImagePull – what's wrong?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          The kubelet on the node could not pull the image. The exact registry
+          error is in <code>kubectl describe pod</code> and tells you which case
+          it is: wrong name or tag, missing credentials or permissions, registry
+          rate limiting, no network path to the registry, or no image for the
+          node's CPU architecture.
+        </p>
+      </div>
+
+      <h4>1. ErrImagePull vs ImagePullBackOff</h4>
+      <p>
+        They are the same problem at two moments. <code>ErrImagePull</code> is
+        shown right after a pull attempt fails. The kubelet then retries with an
+        exponential back-off (up to 5 minutes), and while it waits the status is
+        <code>ImagePullBackOff</code>. The pod is scheduled – this is entirely
+        between the <b>node</b> (kubelet + container runtime) and the
+        <b>registry</b>. The API server and your kubectl credentials play no
+        part, which is why "I can pull it on my laptop" proves little.
+      </p>
+      <pre><code>kubelet on node-3
+  │ resolve registry.example.com      ← node DNS
+  │ HTTPS to registry                 ← node network: NAT, proxy, private endpoint
+  │ authenticate                      ← imagePullSecrets or node identity (IAM)
+  │ fetch manifest for tag 2.3.1      ← does the tag exist?
+  │ pick the entry for linux/arm64    ← multi-arch index must include node's arch
+  ▼ pull layers → containerd unpacks → container can start</code></pre>
+
+      <h4>2. Read the error message</h4>
+      <table>
+        <thead>
+          <tr><th>Message in Events (abridged)</th><th>Cause</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>failed to resolve reference "…/api:2.3.1": not found</code></td>
+            <td>Typo in repository or tag, or the CI never pushed that tag.</td>
+          </tr>
+          <tr>
+            <td><code>pull access denied, repository does not exist or may require authorization</code> / <code>401 Unauthorized</code> / <code>403 Forbidden</code></td>
+            <td>
+              Private registry without valid credentials: no
+              <code>imagePullSecrets</code>, secret in the wrong namespace,
+              expired token, or the node's cloud identity lacks pull permission.
+            </td>
+          </tr>
+          <tr>
+            <td><code>429 Too Many Requests</code> / <code>toomanyrequests</code></td>
+            <td>Registry rate limit – typically anonymous Docker Hub pulls from many nodes behind one NAT IP.</td>
+          </tr>
+          <tr>
+            <td><code>dial tcp …:443: i/o timeout</code> / <code>no such host</code></td>
+            <td>Node can't reach the registry: private cluster without NAT/private endpoint, proxy, firewall, DNS.</td>
+          </tr>
+          <tr>
+            <td><code>no match for platform in manifest</code></td>
+            <td>The image has no variant for the node's OS/architecture (amd64-only image on arm64 nodes).</td>
+          </tr>
+          <tr>
+            <td><code>x509: certificate signed by unknown authority</code></td>
+            <td>Private registry with an internal CA that the node's container runtime doesn't trust.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Commands and fixes</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl describe pod &lt;pod&gt; | grep -A10 Events</code></td>
+            <td>Shows the exact image reference used and the registry error.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl get pod &lt;pod&gt; -o jsonpath='{.spec.imagePullSecrets}'</code></td>
+            <td>Which pull secrets the pod actually has (they can also come from its ServiceAccount).</td>
+          </tr>
+          <tr>
+            <td><code>kubectl create secret docker-registry regcred --docker-server=registry.example.com --docker-username=… --docker-password=… -n shop</code></td>
+            <td>Creates a pull secret – it must be in the <b>same namespace</b> as the pod.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl patch sa default -n shop -p '{"imagePullSecrets":[{"name":"regcred"}]}'</code></td>
+            <td>Attaches the secret to a ServiceAccount, so every pod using it gets the secret automatically.</td>
+          </tr>
+          <tr>
+            <td><code>docker manifest inspect registry.example.com/shop/api:2.3.1</code></td>
+            <td>From your machine: does the tag exist, and which platforms does it contain?</td>
+          </tr>
+          <tr>
+            <td><code>kubectl debug node/&lt;node&gt; -it --image=busybox</code> then <code>chroot /host crictl pull …</code></td>
+            <td>Reproduces the pull from the node itself, with the node's network and runtime.</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: api
+  namespace: shop
+spec:
+  imagePullSecrets:
+    - name: regcred                  # docker-registry Secret in namespace "shop"
+  containers:
+    - name: api
+      image: registry.example.com/shop/api:2.3.1
+      imagePullPolicy: IfNotPresent  # default for a fixed tag; ":latest" defaults to Always</code></pre>
+      <p>
+        On managed clouds, prefer node or workload identity over static pull
+        secrets: grant the node role pull rights on ECR/ACR/Artifact Registry
+        and the kubelet's credential provider fetches short-lived tokens
+        automatically.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          The team adds a cheaper arm64 node pool. Pods of one service land
+          there and never start; the same pods on amd64 nodes are fine.
+        </p>
+        <pre><code>$ kubectl get pods -o wide -l app=pdf
+NAME                   READY   STATUS             NODE
+pdf-6d8f7c9b5-4kz2x    1/1     Running            amd-node-1
+pdf-6d8f7c9b5-r7q8m    0/1     ImagePullBackOff   arm-node-2
+
+$ kubectl describe pod pdf-6d8f7c9b5-r7q8m | grep Failed
+  Warning  Failed  kubelet  Failed to pull image "registry.example.com/pdf:4.1.0":
+  no match for platform in manifest: not found
+
+$ docker manifest inspect registry.example.com/pdf:4.1.0 | grep architecture
+        "architecture": "amd64",</code></pre>
+        <p>
+          The image was built for amd64 only. Short term: add a
+          <code>nodeSelector</code> <code>kubernetes.io/arch: amd64</code> to the
+          Deployment. Real fix: build a multi-arch image
+          (<code>docker buildx build --platform linux/amd64,linux/arm64 --push</code>).
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>The pull secret exists – in another namespace. Secrets are namespaced.</li>
+          <li>
+            Testing the pull on a laptop that is logged in to the registry, then
+            concluding "the image is fine" – the node has different credentials
+            and network.
+          </li>
+          <li>
+            Relying on anonymous Docker Hub pulls in production; a scale-out
+            event across many nodes hits the rate limit. Mirror critical images
+            or use a pull-through cache.
+          </li>
+          <li>
+            Mutable tags with <code>IfNotPresent</code>: some nodes run a cached
+            old image under the same tag (pin by digest – see the
+            <a href="docker.html">Docker page</a>).
+          </li>
+          <li>Expired registry tokens stored as static Secrets (e.g. short-lived cloud registry tokens).</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "ErrImagePull is the failure, ImagePullBackOff is the kubelet waiting
+          before it retries. It's always between the node and the registry, so
+          I read the exact error in describe: not found means name or tag;
+          unauthorized means pull secrets or node IAM; 429 means rate limiting;
+          timeouts mean network; 'no match for platform' means architecture. To
+          prevent it: multi-arch images, a mirror or pull-through cache, and
+          node identity instead of static secrets." Follow-ups: "Where must the
+          pull secret live?", "Why does it work on some nodes but not others?"
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q58">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q59">
+      <h3>Q59. A node becomes NotReady. What happens to its pods?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          When the kubelet stops reporting, the node controller marks the node
+          NotReady/Unknown and taints it with a <code>NoExecute</code> taint.
+          Pods tolerate that taint for 300 seconds by default; after that they
+          are deleted and their controllers create replacements on healthy
+          nodes. StatefulSet pods and RWO volumes need extra care, and DaemonSet
+          pods are not moved at all.
+        </p>
+      </div>
+
+      <h4>1. The timeline</h4>
+      <pre><code>t = 0      kubelet on node-2 stops renewing its Lease (crash, network cut, power loss)
+             (healthy kubelets renew a Lease in kube-node-lease about every 10s)
+t ≈ 40-50s node-monitor-grace-period expires
+             → node condition Ready = Unknown (or False if the kubelet reports NotReady)
+             → taint node.kubernetes.io/unreachable:NoExecute (or not-ready:NoExecute)
+             → pods on the node get condition Ready=False → removed from Service endpoints
+t ≈ 5m     default tolerationSeconds: 300 expires for each pod
+             → pods are marked for deletion (Terminating)
+             → ReplicaSet sees too few pods → creates replacements → scheduled elsewhere
+node never comes back?  pods stay "Terminating" until the node object is deleted
+                        or the node returns and the kubelet confirms they're gone</code></pre>
+      <p>
+        Two important consequences. First, traffic stops quickly (within the
+        grace period) because the pods go NotReady and leave the EndpointSlices.
+        Second, <b>capacity</b> is reduced for about 5 minutes, because
+        replacements are created only after the toleration expires – so you need
+        enough replicas on other nodes to cover that window.
+      </p>
+      <p>
+        The 300 s comes from a default toleration added to every pod by the
+        <code>DefaultTolerationSeconds</code> admission plugin. You can override
+        it per workload:
+      </p>
+      <pre><code>tolerations:
+  - key: node.kubernetes.io/unreachable
+    operator: Exists
+    effect: NoExecute
+    tolerationSeconds: 60     # move this stateless app after 1 minute
+  - key: node.kubernetes.io/not-ready
+    operator: Exists
+    effect: NoExecute
+    tolerationSeconds: 60</code></pre>
+      <p>
+        Shorter means faster recovery but more churn during brief network blips;
+        don't go to near zero.
+      </p>
+
+      <h4>2. Why StatefulSets behave differently</h4>
+      <p>
+        Kubernetes cannot tell whether an unreachable node is dead or just
+        partitioned – the pod may still be running and writing to its disk. A
+        Deployment doesn't care: two copies of a stateless pod are harmless. A
+        StatefulSet guarantees <b>at most one</b> <code>db-0</code>; starting a
+        second one while the first might still write to the same volume risks
+        data corruption. So the StatefulSet controller waits until the old pod
+        is really gone – which never happens on its own if the node never
+        returns.
+      </p>
+      <p>A human (or automation that knows the node is dead) must break the tie:</p>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl get nodes</code> / <code>kubectl describe node node-2</code></td>
+            <td>Node conditions, taints, last heartbeat time, and which pods are on it.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl taint nodes node-2 node.kubernetes.io/out-of-service=nodeshutdown:NoExecute</code></td>
+            <td>
+              Non-graceful node shutdown: you declare the node is really off.
+              Pods are force-deleted and their volumes detached, so StatefulSet
+              pods and RWO volumes can move.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl delete node node-2</code></td>
+            <td>Removes the node object; its pods are garbage-collected and controllers replace them.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl delete pod db-0 --grace-period=0 --force</code></td>
+            <td>
+              Removes the pod object without waiting for the kubelet. Only safe
+              if you are sure the node is powered off or isolated.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl drain node-2 --ignore-daemonsets --delete-emptydir-data</code></td>
+            <td>For planned maintenance (node still reachable): evicts pods respecting PDBs.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Volumes and DaemonSets</h4>
+      <ul>
+        <li>
+          <b>RWO volumes</b> (block disks) can only be attached to one node. The
+          cloud may still consider the disk attached to the dead node, so the
+          replacement pod waits with a <code>Multi-Attach error</code> until the
+          attachment is released – the out-of-service taint speeds this up.
+        </li>
+        <li>
+          <b>DaemonSet pods</b> tolerate the unreachable/not-ready taints without
+          a time limit and are never moved – there is one per node by design.
+        </li>
+      </ul>
+
+      <h4>4. Diagnosing the node</h4>
+      <p>
+        <code>kubectl describe node</code> shows conditions and the last
+        heartbeat. On the node (SSH or <code>kubectl debug node/...</code> if the
+        API can still reach it): <code>systemctl status kubelet</code>,
+        <code>journalctl -u kubelet</code>, container runtime status, disk full,
+        memory exhaustion, expired kubelet client certificates, and network
+        connectivity to the API server.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A 3-node cluster loses node-2 (hardware failure) at 09:00. It runs 2 of
+          6 <code>web</code> replicas and <code>postgres-0</code> (StatefulSet,
+          RWO disk).
+        </p>
+        <pre><code>$ kubectl get nodes
+NAME     STATUS     ROLES    AGE
+node-1   Ready      &lt;none&gt;   90d
+node-2   NotReady   &lt;none&gt;   90d
+node-3   Ready      &lt;none&gt;   90d
+
+$ kubectl get pods -o wide        # at 09:06
+NAME                  READY   STATUS        NODE
+web-5f7c8-2kd9q       1/1     Terminating   node-2
+web-5f7c8-8xq3m       1/1     Running       node-1   ← replacement
+web-5f7c8-vt6p2       1/1     Running       node-3   ← replacement
+postgres-0            1/1     Terminating   node-2   ← no replacement</code></pre>
+        <ul>
+          <li>09:00:45 – node NotReady; web pods on node-2 leave the endpoints. 4 of 6 replicas serve traffic.</li>
+          <li>09:05:45 – tolerations expire; 2 new web pods start on node-1/node-3. Back to 6.</li>
+          <li>
+            postgres-0 stays Terminating. After confirming in the cloud console
+            that node-2 is off, the operator applies the
+            <code>out-of-service</code> taint; the disk is detached, and
+            postgres-0 starts on node-3 about a minute later.
+          </li>
+        </ul>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>Expecting pods to move immediately – the default is about 5 minutes.</li>
+          <li>
+            Running only 2 replicas on 2 nodes and losing half the capacity for
+            the whole window; spread replicas and keep headroom.
+          </li>
+          <li>
+            Force-deleting a StatefulSet pod while the node might still be alive
+            – split brain on the database.
+          </li>
+          <li>Single-replica databases on node-local or RWO storage with no plan for node loss.</li>
+          <li>Setting <code>tolerationSeconds: 0</code> so a short network blip reschedules everything.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "The node controller marks the node NotReady after the grace period and
+          adds a NoExecute taint. Pods go NotReady, so traffic stops, but they
+          are only deleted after the default 300-second toleration; then
+          ReplicaSets create replacements elsewhere. StatefulSet pods aren't
+          replaced automatically because Kubernetes can't prove the old one is
+          dead – I'd confirm the node is off and use the out-of-service taint or
+          delete the node. DaemonSet pods don't move." Follow-ups: "How can you
+          make stateless pods move faster?" (tolerationSeconds), "Why not
+          force-delete right away?"
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q59">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q60">
+      <h3>Q60. How do you deploy to Kubernetes in production? What is GitOps?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Not with <code>kubectl apply</code> from a laptop. With GitOps, the
+          desired state of each cluster lives in git, and an agent inside the
+          cluster (Argo CD or Flux) continuously pulls it and reconciles the
+          cluster to match. CI only builds, tests and pushes images, then updates
+          the image tag in git. Every change is reviewed and auditable, rollback
+          is a git revert, and drift is detected and corrected.
+        </p>
+      </div>
+
+      <h4>1. Push vs pull deployment</h4>
+      <table>
+        <thead>
+          <tr><th></th><th>CI pushes (kubectl/helm in pipeline)</th><th>GitOps pull (agent in cluster)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Who talks to the API server</td><td>The CI runner, with cluster credentials</td><td>An agent inside the cluster</td></tr>
+          <tr><td>Source of truth</td><td>Whatever the last pipeline applied</td><td>The git repository</td></tr>
+          <tr><td>Manual change in the cluster</td><td>Stays until the next deploy (drift)</td><td>Detected; reverted if self-heal is on</td></tr>
+          <tr><td>Rollback</td><td>Re-run an old pipeline / <code>rollout undo</code></td><td><code>git revert</code></td></tr>
+          <tr><td>Audit</td><td>Pipeline logs</td><td>Git history + pull-request reviews</td></tr>
+        </tbody>
+      </table>
+      <p>
+        The security point matters: with push, every CI system that deploys
+        needs powerful credentials for every cluster. With pull, the cluster
+        only needs read access to git and the registry; nothing outside holds
+        cluster-admin.
+      </p>
+
+      <h4>2. The end-to-end flow</h4>
+      <pre><code>developer ── PR ──► app repo (code + Dockerfile)
+                        │ CI: build, test, scan, sign
+                        ▼
+                  registry: shop/api:2.3.1 (immutable tag or digest)
+                        │ CI or an image-updater bot opens a PR:
+                        ▼
+                  config repo:  envs/staging/api/values.yaml  tag: 2.3.1
+                        │ merge
+                        ▼
+      Argo CD / Flux in the staging cluster
+        1. polls git (or gets a webhook)
+        2. renders Helm / Kustomize
+        3. diffs rendered manifests vs live objects
+        4. applies the difference → Deployment rolls out (<a href="k8s-study-2-networking.html#q18">Q18</a>)
+        5. reports Synced + Healthy
+                        │ promotion = another PR: envs/prod/api/values.yaml  tag: 2.3.1
+                        ▼
+      prod cluster syncs the same way</code></pre>
+      <p>
+        Environments are usually directories (or overlays) in the config repo:
+        a Helm chart with per-environment values files, or a Kustomize base with
+        per-environment overlays. Promotion is just a PR that changes the tag
+        in the next environment's directory.
+      </p>
+
+      <h4>3. What it looks like in Argo CD</h4>
+      <pre><code>apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: api-prod
+  namespace: argocd
+spec:
+  project: shop
+  source:
+    repoURL: https://git.example.com/platform/config.git
+    targetRevision: main
+    path: envs/prod/api          # Helm chart or Kustomize overlay
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shop
+  syncPolicy:
+    automated:
+      prune: true                # delete objects removed from git
+      selfHeal: true             # revert manual changes (drift)
+    syncOptions:
+      - CreateNamespace=true</code></pre>
+      <table>
+        <thead>
+          <tr><th>Concept</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Sync</td><td>Apply git's rendered manifests to the cluster.</td></tr>
+          <tr><td>OutOfSync</td><td>Live objects differ from git – a new commit, or someone changed the cluster by hand.</td></tr>
+          <tr><td><code>selfHeal</code></td><td>Automatically re-applies git when the live state drifts.</td></tr>
+          <tr><td><code>prune</code></td><td>Deletes resources that were removed from git; without it they linger.</td></tr>
+          <tr><td>Health</td><td>Argo CD's view of whether resources are working (Deployment rolled out, pods Ready).</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Flux expresses the same ideas with a <code>GitRepository</code> (where
+        to pull from) and a <code>Kustomization</code> or
+        <code>HelmRelease</code> (what to apply and how often).
+      </p>
+
+      <h4>4. Secrets and progressive delivery</h4>
+      <ul>
+        <li>
+          <b>Secrets</b> never go to git in plain text (base64 is not
+          encryption, <a href="k8s-study-1-basics.html#q8">Q8</a>). Options: SOPS-encrypted files that
+          Flux/Argo decrypt, Sealed Secrets (encrypted for one cluster's key),
+          or External Secrets Operator where git holds only a reference to the
+          secret in Vault or a cloud secret manager.
+        </li>
+        <li>
+          <b>Progressive delivery</b>: GitOps decides <i>what</i> should run;
+          Argo Rollouts or Flagger decide <i>how</i> to shift traffic – canary
+          steps, metric analysis, automatic abort (<a href="k8s-study-3-advanced.html#q35">Q35</a>).
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Version 2.3.1 of the API reaches production at 10:00 through a merged
+          PR. At 10:07 error rates climb.
+        </p>
+        <ol>
+          <li>
+            An engineer runs <code>kubectl rollout undo deploy/api</code>. The
+            cluster now runs 2.3.0 – but Argo CD sees the live Deployment differs
+            from git (which says 2.3.1), marks it OutOfSync, and because
+            <code>selfHeal</code> is on, re-applies 2.3.1 within minutes. The
+            errors come back.
+          </li>
+          <li>
+            Correct fix: <code>git revert</code> the promotion commit (or merge a
+            PR setting the tag back to 2.3.0). Argo CD syncs, the Deployment
+            rolls back, and the history shows who rolled back, when, and why.
+          </li>
+          <li>
+            Some teams allow an emergency path: temporarily disable auto-sync
+            for that Application, roll back by hand, then fix git – but the fix
+            must end up in git, or the next sync undoes it.
+          </li>
+        </ol>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>Rolling back or "hot-fixing" with kubectl while self-heal is on – GitOps reverts it.</li>
+          <li>
+            Using <code>:latest</code> or other mutable tags in git – the config
+            repo no longer describes what runs; use immutable tags or digests.
+          </li>
+          <li>Plain Secrets committed to the config repo.</li>
+          <li>
+            <code>prune</code> disabled forever: renamed or deleted resources keep
+            running in the cluster.
+          </li>
+          <li>
+            Mixing code and environment config in one repo, so every app commit
+            triggers syncs and promotion history is buried in code history.
+          </li>
+          <li>
+            Treating "Synced" as "working" – sync only means applied; check
+            Health and the rollout status.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "CI builds, tests, scans and pushes an immutable image, then updates
+          the tag in a config repo through a PR. An agent in the cluster – Argo
+          CD or Flux – pulls that repo and reconciles the cluster to it. So git
+          is the source of truth, every change is reviewed, rollback is a
+          revert, drift is corrected automatically, and CI doesn't need cluster
+          credentials. Packaging is Helm or Kustomize per environment, secrets
+          via SOPS or External Secrets, and canaries via Argo Rollouts." Likely
+          follow-ups: "How do you roll back?" (git revert, not rollout undo),
+          "How do you promote between environments?", "How do you handle
+          secrets?"
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q60">&uarr; Short interview answer</a></p>
+    </section>
+    <p class="pager"><a href="k8s-study-4-admin.html">&larr; Part 4: Cluster Administration</a> · <a href="k8s-study.html">Contents</a></p>
+
+    <p class="src">
+      <b>Further reading:</b>
+      <a href="https://kubernetes.io/docs/home/">Kubernetes documentation</a>
+      ·
+      <a href="https://kubernetes.io/docs/reference/kubectl/">kubectl reference</a>
+      ·
+      <a href="https://gateway-api.sigs.k8s.io/">Gateway API</a>
+      ·
+      <a href="https://kubernetes.io/blog/">Kubernetes blog</a>
+    </p>
+  </body>
+</html>

@@ -1,0 +1,2467 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>K8s Study Guide 4/5 – Cluster Administration</title>
+    <style>
+      :root {
+        --fg: #222;
+        --bg: #fff;
+        --muted: #555;
+        --link: #0b5cad;
+        --code-bg: #f3f3f3;
+        --pre-bg: #f5f5f5;
+        --rule: #ddd;
+        --tldr: #0b5cad;
+        --tldr-bg: #eef4fb;
+        --ex: #2e7d32;
+        --ex-bg: #eef7ee;
+        --warn: #b26a00;
+        --warn-bg: #fdf5e6;
+        --tip: #6a3fa0;
+        --tip-bg: #f4eefa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #ddd;
+          --bg: #1b1b1b;
+          --muted: #aaa;
+          --link: #6db3ff;
+          --code-bg: #2a2a2a;
+          --pre-bg: #2a2a2a;
+          --rule: #444;
+          --tldr: #6db3ff;
+          --tldr-bg: #1f2a36;
+          --ex: #7fcf85;
+          --ex-bg: #1f2c20;
+          --warn: #f0b45a;
+          --warn-bg: #33291a;
+          --tip: #c3a0f0;
+          --tip-bg: #2a2236;
+        }
+      }
+      body {
+        font-family:
+          Segoe UI,
+          system-ui,
+          sans-serif;
+        line-height: 1.65;
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 24px 16px 80px;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      a {
+        color: var(--link);
+      }
+      h1 {
+        font-size: 1.6em;
+      }
+      h2 {
+        margin-top: 2.6em;
+        border-bottom: 2px solid var(--rule);
+        padding-bottom: 4px;
+      }
+      section.q {
+        margin-top: 2.4em;
+        padding-top: 0.6em;
+        border-top: 1px solid var(--rule);
+      }
+      section.q h3 {
+        margin: 0.2em 0 0.6em;
+        font-size: 1.25em;
+      }
+      section.q h4 {
+        margin: 1.6em 0 0.4em;
+        font-size: 1.05em;
+      }
+      code {
+        font-family: Consolas, monospace;
+        background: var(--code-bg);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 0.92em;
+      }
+      pre {
+        background: var(--pre-bg);
+        padding: 12px;
+        overflow-x: auto;
+        border-radius: 4px;
+        line-height: 1.45;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0.8em 0;
+        font-size: 0.95em;
+        display: block;
+        overflow-x: auto;
+      }
+      th,
+      td {
+        border: 1px solid var(--rule);
+        padding: 6px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--pre-bg);
+      }
+      .tldr,
+      .example,
+      .pitfall,
+      .interview {
+        border-left: 4px solid;
+        border-radius: 4px;
+        padding: 8px 14px;
+        margin: 1em 0;
+      }
+      .tldr {
+        border-color: var(--tldr);
+        background: var(--tldr-bg);
+      }
+      .example {
+        border-color: var(--ex);
+        background: var(--ex-bg);
+      }
+      .pitfall {
+        border-color: var(--warn);
+        background: var(--warn-bg);
+      }
+      .interview {
+        border-color: var(--tip);
+        background: var(--tip-bg);
+      }
+      .label {
+        font-weight: 700;
+        margin: 0.2em 0 0.4em;
+      }
+      .tldr .label {
+        color: var(--tldr);
+      }
+      .example .label {
+        color: var(--ex);
+      }
+      .pitfall .label {
+        color: var(--warn);
+      }
+      .interview .label {
+        color: var(--tip);
+      }
+      .example pre,
+      .pitfall pre {
+        background: var(--bg);
+      }
+      .ref {
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+      .intro {
+        color: var(--muted);
+      }
+      nav ol {
+        padding-left: 20px;
+      }
+      nav li {
+        margin: 2px 0;
+      }
+      nav a {
+        text-decoration: none;
+      }
+      nav details {
+        margin: 4px 0;
+      }
+      nav summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .back {
+        display: inline-block;
+        margin-bottom: 8px;
+        text-decoration: none;
+        font-size: 0.95em;
+      }
+      .back:hover {
+        text-decoration: underline;
+      }
+      .src {
+        margin-top: 3em;
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+      .pager {
+        margin: 2.4em 0 0;
+        padding-top: 1em;
+        border-top: 1px solid var(--rule);
+      }
+      .pager a {
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back" href="k8s-study.html">&larr; Study guide contents</a>
+    <h1>Kubernetes Study Guide – Part 4: Cluster Administration</h1>
+    <p class="intro">Questions 39–49 of 60, explained in depth. Short interview answers are on the <a href="k8s.html">Kubernetes interview page</a>.</p>
+    <nav>
+      <ol>
+        <li value="39"><a href="#q39">How do you back up and restore etcd?</a></li>
+        <li value="40"><a href="#q40">How do you upgrade a cluster safely?</a></li>
+        <li value="41"><a href="#q41">How do you monitor a cluster?</a></li>
+        <li value="42"><a href="#q42">How do you set up logging?</a></li>
+        <li value="43"><a href="#q43">How do you prevent pods from running privileged or as root?</a></li>
+        <li value="44"><a href="#q44">How do you secure a Kubernetes cluster overall?</a></li>
+        <li value="45"><a href="#q45">How do you make the cluster itself highly available?</a></li>
+        <li value="46"><a href="#q46">How do you encrypt Secrets at rest in etcd?</a></li>
+        <li value="47"><a href="#q47">Several teams share one cluster. How do you stop one team affecting another?</a></li>
+        <li value="48"><a href="#q48">ResourceQuota vs LimitRange?</a></li>
+        <li value="49"><a href="#q49">How does DNS (CoreDNS) work, and why might lookups be slow?</a></li>
+      </ol>
+    </nav>
+    <!-- ================================================================ -->
+
+    <section class="q" id="q39">
+      <h3>Q39. How do you back up and restore etcd?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          On a self-managed cluster, take regular <code>etcdctl snapshot save</code>
+          snapshots, store them encrypted off the node, and restore with
+          <code>etcdutl snapshot restore</code> into a <i>new</i> data directory
+          while the API servers are stopped. On managed clusters (EKS, AKS, GKE)
+          the provider owns etcd, so you back up workloads and volumes instead
+          (Velero, GitOps repo, volume snapshots). An untested backup is not a
+          backup – rehearse the restore.
+        </p>
+      </div>
+
+      <h4>1. Why etcd is the one thing you must not lose</h4>
+      <p>
+        Every object in the cluster – Deployments, Services, Secrets, RBAC
+        rules, CRDs and custom resources, node registrations, leases – lives as
+        a key under <code>/registry/...</code> in etcd. The API server is
+        stateless; controllers, the scheduler and kubelets are stateless too.
+        They all reconstruct their view from etcd via the API server. So:
+      </p>
+      <ul>
+        <li>
+          Lose a worker node → controllers recreate its pods elsewhere. Annoying,
+          not fatal.
+        </li>
+        <li>
+          Lose the API server → restart it, nothing is lost.
+        </li>
+        <li>
+          Lose etcd (all members, or quorum with corrupted data) → the cluster
+          forgets everything it was supposed to run. Containers already running
+          keep running for a while, but nothing can be managed or healed.
+        </li>
+      </ul>
+      <p>
+        What an etcd snapshot does <b>not</b> contain: the data inside
+        PersistentVolumes (database files, uploads), container images, and
+        anything outside the cluster (DNS records, cloud load balancers). Those
+        need their own backup strategy.
+      </p>
+
+      <h4>2. Taking a snapshot</h4>
+      <p>
+        <code>etcdctl snapshot save</code> connects to one healthy member over
+        TLS and streams a consistent point-in-time copy of its keyspace into a
+        single file. It does not stop the cluster. On a kubeadm cluster with
+        "stacked" etcd (etcd runs as a static pod on each control-plane node),
+        the certificates live in <code>/etc/kubernetes/pki/etcd/</code>:
+      </p>
+      <pre><code># run on a control-plane node
+export ETCDCTL_API=3   # default since etcd 3.4, harmless to set
+etcdctl --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  snapshot save /backup/etcd-$(date +%F-%H%M).db
+
+# verify the file: hash, revision, number of keys, size
+etcdutl snapshot status /backup/etcd-2026-11-15-0200.db -w table</code></pre>
+      <p>
+        In practice this runs as a CronJob or systemd timer on a control-plane
+        node, then uploads the file to object storage (S3, Azure Blob, GCS) with
+        encryption and a retention policy. Remember that the snapshot contains
+        every Secret – if etcd encryption at rest is <i>not</i> enabled
+        (<a href="#q46">Q46</a>), it contains them in plain base64.
+      </p>
+
+      <h4>3. Restoring – the actual procedure</h4>
+      <p>
+        A restore does not "load data into" a running etcd. It builds a brand
+        new data directory from the snapshot, with a new cluster ID, and you
+        start etcd on top of that directory. Steps for a kubeadm single
+        control-plane cluster:
+      </p>
+      <pre><code>1. Stop the API server and etcd
+   (kubelet stops static pods whose manifests disappear)
+   mkdir /root/manifests-off
+   mv /etc/kubernetes/manifests/kube-apiserver.yaml /root/manifests-off/
+   mv /etc/kubernetes/manifests/etcd.yaml           /root/manifests-off/
+
+2. Restore the snapshot into a NEW directory
+   etcdutl snapshot restore /backup/etcd-2026-11-15-0200.db \
+     --data-dir /var/lib/etcd-restored
+
+3. Point etcd at the new directory
+   edit /root/manifests-off/etcd.yaml:
+     volumes -&gt; etcd-data -&gt; hostPath.path: /var/lib/etcd-restored
+
+4. Start etcd, then the API server
+   mv /root/manifests-off/etcd.yaml           /etc/kubernetes/manifests/
+   mv /root/manifests-off/kube-apiserver.yaml /etc/kubernetes/manifests/
+
+5. Check
+   kubectl get nodes
+   kubectl get pods -A</code></pre>
+      <p>
+        For a multi-member etcd cluster you restore the same snapshot on
+        <b>every</b> member, each with its own <code>--name</code>,
+        <code>--initial-cluster</code> and
+        <code>--initial-advertise-peer-urls</code>, so they form a new cluster
+        together. You never restore only one member of a running cluster.
+      </p>
+      <p>
+        <code>etcdutl</code> is the offline tool for working with data files;
+        <code>etcdctl snapshot restore</code> still exists in older guides but
+        is deprecated in favour of <code>etcdutl</code>.
+      </p>
+
+      <h4>4. What happens after the restore</h4>
+      <p>
+        The cluster's state jumps back to the moment of the snapshot. Everything
+        then reconciles towards that old desired state: Deployments created
+        after the snapshot no longer exist, so their pods are cleaned up; objects
+        deleted after the snapshot come back. Nodes re-register, and kubelets
+        compare what they run with what the API says they should run. This is
+        why you want frequent snapshots (often every hour or less) and why
+        GitOps (<a href="k8s-study-5-scenarios.html#q60">Q60</a>) is a great complement: after a restore,
+        Argo CD or Flux re-applies anything that changed since the snapshot.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>etcdctl snapshot save f.db</code></td>
+            <td>
+              Streams a consistent copy of one live member's keyspace into a
+              file, over the network, without downtime.
+            </td>
+          </tr>
+          <tr>
+            <td><code>etcdutl snapshot status f.db</code></td>
+            <td>
+              Reads the file offline and prints hash, revision, key count and
+              size – a cheap integrity check after every backup.
+            </td>
+          </tr>
+          <tr>
+            <td><code>etcdutl snapshot restore f.db --data-dir d</code></td>
+            <td>
+              Creates a fresh data directory (new cluster ID and member ID) from
+              the snapshot. Does not touch any running etcd.
+            </td>
+          </tr>
+          <tr>
+            <td><code>etcdctl endpoint health / endpoint status -w table</code></td>
+            <td>
+              Shows which members are healthy, who is leader, DB size and raft
+              index – use before and after a restore.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Snapshots run every hour at :00 and are uploaded to S3 with 7 days of
+          retention (168 files, each about 80 MB). At 14:20 an engineer runs a
+          script that deletes a namespace containing 40 Deployments and their
+          Secrets. Options:
+        </p>
+        <ul>
+          <li>
+            <b>GitOps-managed namespace:</b> recreate the namespace and let Argo
+            CD re-sync – no etcd restore needed. Secrets come back from the
+            external secret store. Minutes of work, no impact on other teams.
+          </li>
+          <li>
+            <b>Not in git:</b> an etcd restore to 14:00 would bring the
+            namespace back, but it would also roll back <i>every other team's</i>
+            changes from the last 20 minutes. A restore is a whole-cluster time
+            machine, not a per-namespace undo. Velero (namespace-level
+            backups) is the better tool for this case.
+          </li>
+        </ul>
+        <p>
+          Conclusion: etcd snapshots are for disaster recovery (all members
+          lost, data corrupted); namespace mistakes are better fixed from git or
+          Velero.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Never testing the restore. The first restore attempt should not be
+            during an outage.
+          </li>
+          <li>
+            Keeping snapshots only on the control-plane node – if the node dies,
+            so does the backup.
+          </li>
+          <li>
+            Restoring into the existing data directory, or restoring only one
+            member of a multi-member cluster – leads to a split or corrupt
+            cluster.
+          </li>
+          <li>
+            Forgetting that snapshots contain all Secrets: store them encrypted
+            and restrict who can read the bucket.
+          </li>
+          <li>
+            Assuming the snapshot covers PersistentVolume data. It does not.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "etcd is the only stateful part of the control plane, so on
+          self-managed clusters I take scheduled <code>etcdctl snapshot
+          save</code> backups, verify them with <code>etcdutl snapshot
+          status</code>, and ship them encrypted to object storage. Restore means
+          stopping the API servers, <code>etcdutl snapshot restore</code> into a
+          new data dir on every member, pointing etcd at it and starting again –
+          and we rehearse it. On managed Kubernetes the provider handles etcd, so
+          I rely on GitOps plus Velero for workloads and volumes." Likely
+          follow-ups: what is not in the snapshot (PV data), how often you back
+          up, how restore interacts with GitOps.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q39">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q40">
+      <h3>Q40. How do you upgrade a cluster safely?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Prepare first (release notes, deprecated APIs, add-on compatibility,
+          etcd backup, staging rehearsal), then upgrade one minor version at a
+          time: control plane first, then nodes one by one (or by surging new
+          nodes), letting PodDisruptionBudgets keep applications available.
+          Upgrading should be a routine process every few months, not a yearly
+          project.
+        </p>
+      </div>
+
+      <h4>1. Why upgrades are unavoidable</h4>
+      <p>
+        Kubernetes releases three minor versions per year, and each one gets
+        about 14 months of patch support. Managed providers follow a similar
+        calendar and eventually force-upgrade clusters that fall off support (or
+        charge extra for extended support). If you skip upgrades for a year,
+        you are suddenly two or three minors behind and must do several upgrades
+        in a row under time pressure. Teams that upgrade every release find each
+        step small and boring – which is the goal.
+      </p>
+
+      <h4>2. Preparation: where breakages actually come from</h4>
+      <ul>
+        <li>
+          <b>Removed API versions.</b> The classic breakage: a manifest or Helm
+          chart still uses an API version that the new release no longer serves
+          (for example <code>policy/v1beta1</code> PodDisruptionBudget was
+          removed in 1.25). The API server simply rejects it. Scan before
+          upgrading:
+          <pre><code>pluto detect-helm -o wide          # Helm releases
+pluto detect-files -d ./manifests  # files in git
+kubent                              # live cluster objects</code></pre>
+          The API server also exposes the metric
+          <code>apiserver_requested_deprecated_apis</code>, which tells you who is
+          still calling old versions.
+        </li>
+        <li>
+          <b>Behaviour changes and removed features</b> in the release notes –
+          for example dockershim removal (1.24), PodSecurityPolicy removal
+          (1.25), and cgroup v1 support removal in 1.35, which means nodes still
+          on an OS image with cgroup v1 must be moved to cgroup v2 first.
+        </li>
+        <li>
+          <b>Add-ons:</b> CNI, CSI drivers, ingress/gateway controllers,
+          cert-manager, service mesh, monitoring agents. Each has its own
+          compatibility matrix; upgrade them to a version that supports both the
+          old and new Kubernetes version <i>before</i> the cluster upgrade.
+        </li>
+        <li>
+          <b>Backup and rehearsal:</b> etcd snapshot (<a href="#q39">Q39</a>) on
+          self-managed clusters, then run the exact same upgrade on a staging
+          cluster first.
+        </li>
+      </ul>
+
+      <h4>3. Order of operations and version skew</h4>
+      <p>
+        Components are allowed to run at slightly different versions during the
+        upgrade – this is the <b>version skew policy</b>, and it dictates the
+        order:
+      </p>
+      <ul>
+        <li>
+          The <b>kube-apiserver</b> is upgraded first. In an HA control plane,
+          API servers may differ by at most one minor version from each other.
+        </li>
+        <li>
+          <b>kube-controller-manager and kube-scheduler</b> must not be newer
+          than the API server – so they follow it.
+        </li>
+        <li>
+          <b>kubelet</b> must never be newer than the API server, and may be a
+          few minor versions older (up to three in current releases). That is
+          why nodes come <i>after</i> the control plane and why you can upgrade
+          nodes gradually.
+        </li>
+        <li>
+          <b>kubectl</b> is supported within one minor version of the API
+          server.
+        </li>
+      </ul>
+      <p>
+        You must go <b>one minor version at a time</b>: 1.33 → 1.34 → 1.35.
+        Skipping (1.33 → 1.35) is not supported, because storage migrations and
+        API conversions are only guaranteed between adjacent versions.
+      </p>
+
+      <h4>4. Upgrading nodes without dropping traffic</h4>
+      <p>Two strategies:</p>
+      <ul>
+        <li>
+          <b>In place (cordon + drain + upgrade):</b>
+          <code>kubectl cordon</code> marks the node unschedulable,
+          <code>kubectl drain</code> evicts its pods through the eviction API
+          (which respects PodDisruptionBudgets – <a href="k8s-study-2-networking.html#q25">Q25</a>),
+          controllers recreate those pods on other nodes, you upgrade the
+          kubelet, then <code>uncordon</code>.
+        </li>
+        <li>
+          <b>Surge / replace:</b> add new nodes already on the new version,
+          drain old nodes, delete them. This is what managed node groups and
+          Karpenter do. It is safer (rollback = keep old nodes) and needs spare
+          capacity or quota.
+        </li>
+      </ul>
+      <pre><code># kubeadm example: 1.34 -&gt; 1.35
+# 0. switch the package repo to the new minor (pkgs.k8s.io is per-minor)
+
+# first control-plane node
+apt-get install -y kubeadm=1.35.x-*
+kubeadm upgrade plan              # shows what will change, checks health
+kubeadm upgrade apply v1.35.x     # upgrades static pods: apiserver, etcd, ...
+
+# other control-plane nodes
+kubeadm upgrade node
+
+# each node (control plane too), one at a time
+kubectl drain node-1 --ignore-daemonsets --delete-emptydir-data
+apt-get install -y kubelet=1.35.x-* kubectl=1.35.x-*
+systemctl daemon-reload &amp;&amp; systemctl restart kubelet
+kubectl uncordon node-1</code></pre>
+
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubeadm upgrade plan</code></td>
+            <td>
+              Checks cluster health and prints the versions you can upgrade to,
+              plus any component config changes. Changes nothing.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubeadm upgrade apply v1.35.x</code></td>
+            <td>
+              Rewrites the static pod manifests of the control plane on this
+              node, renews certificates, updates cluster-wide config
+              (kubeadm/kubelet ConfigMaps, CoreDNS, kube-proxy).
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubeadm upgrade node</code></td>
+            <td>
+              On other nodes: upgrades local control-plane components (if any)
+              and the local kubelet configuration.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl drain node-1 --ignore-daemonsets</code></td>
+            <td>
+              Cordons the node, then evicts every pod via the eviction API,
+              honouring PDBs. DaemonSet pods are skipped (they would be
+              recreated on the same node anyway). Hangs if a PDB cannot be
+              satisfied.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl uncordon node-1</code></td>
+            <td>Makes the node schedulable again.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Cluster: 3 control-plane nodes, 6 workers, version 1.34. Payment API
+          has 3 replicas with a PDB <code>maxUnavailable: 1</code>.
+        </p>
+        <ol>
+          <li>
+            Week before: <code>pluto</code> finds one Helm chart using a removed
+            API version → chart updated. CNI upgraded to a version supporting
+            1.34 and 1.35. Staging cluster upgraded first; smoke tests pass.
+          </li>
+          <li>
+            Upgrade day: etcd snapshot taken. Control-plane node 1:
+            <code>kubeadm upgrade apply</code>. Nodes 2 and 3:
+            <code>kubeadm upgrade node</code>. During this time the API server is
+            served by the other two nodes through the load balancer – clients
+            see no downtime.
+          </li>
+          <li>
+            Workers one by one: drain worker-1. It hosts 2 payment pods; the
+            eviction API evicts the first, refuses the second until the
+            replacement is Ready elsewhere (PDB allows only 1 unavailable), then
+            evicts it. Payment always has at least 2 of 3 replicas serving.
+          </li>
+          <li>
+            After all 6 workers: <code>kubectl get nodes</code> shows v1.35 on
+            all nine nodes. Total: a few hours, zero customer impact.
+          </li>
+        </ol>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            A PDB with <code>minAvailable</code> equal to the replica count, or a
+            PDB on a single-replica app → <code>drain</code> waits forever.
+          </li>
+          <li>
+            Pods with <code>emptyDir</code> or not owned by a controller block
+            drain unless you pass <code>--delete-emptydir-data</code> /
+            <code>--force</code> – and bare pods are then gone for good.
+          </li>
+          <li>
+            Skipping minor versions, or upgrading kubelets before the control
+            plane (kubelet newer than API server is not supported).
+          </li>
+          <li>
+            Forgetting add-ons: a CNI or CSI driver that doesn't support the new
+            version can take down networking or storage cluster-wide.
+          </li>
+          <li>
+            Not enough spare capacity: when you drain a node, its pods must fit
+            somewhere else, otherwise they stay Pending.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Structure the answer as <b>prepare → control plane → nodes →
+          verify</b>: "I read the release notes, scan for removed APIs with
+          pluto or kubent, upgrade add-ons to compatible versions, back up etcd,
+          and rehearse in staging. Then one minor at a time: control plane first
+          because of the version skew policy, then nodes by drain or surge, with
+          PDBs protecting availability." Follow-ups: what is version skew, why
+          can't you skip versions, what blocks a drain, how managed clusters
+          differ (the provider upgrades the control plane; you still handle
+          node pools and add-ons).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q40">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q41">
+      <h3>Q41. How do you monitor a cluster?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Collect metrics with Prometheus from several sources – node-exporter
+          (machines), kubelet/cAdvisor (containers), kube-state-metrics (object
+          state) and the applications themselves – visualise them in Grafana and
+          alert through Alertmanager. Add traces with OpenTelemetry and central
+          logs (<a href="#q42">Q42</a>). Alert on user-facing symptoms first,
+          then on cluster health signals.
+        </p>
+      </div>
+
+      <h4>1. The metric sources and what each one answers</h4>
+      <table>
+        <thead>
+          <tr><th>Source</th><th>What it measures</th><th>Example question</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>node-exporter</b> (DaemonSet)</td>
+            <td>Machine-level: CPU, memory, disk space and IO, network, load.</td>
+            <td>Is node-4's disk 95% full?</td>
+          </tr>
+          <tr>
+            <td><b>kubelet / cAdvisor</b></td>
+            <td>
+              Per-container resource usage: CPU seconds, memory working set,
+              CPU throttling, network per pod.
+            </td>
+            <td>Is the API pod being CPU-throttled?</td>
+          </tr>
+          <tr>
+            <td><b>kube-state-metrics</b></td>
+            <td>
+              The <i>state of objects</i> from the API: desired vs available
+              replicas, pod phase, restarts, Job failures, PVC status, node
+              conditions.
+            </td>
+            <td>Which Deployments have fewer available replicas than desired?</td>
+          </tr>
+          <tr>
+            <td><b>Control plane</b></td>
+            <td>
+              API server request latency/errors, etcd latency and DB size,
+              scheduler queue (self-managed clusters).
+            </td>
+            <td>Is the API server slow because etcd disks are slow?</td>
+          </tr>
+          <tr>
+            <td><b>Applications</b></td>
+            <td>Request rate, errors, latency, business metrics.</td>
+            <td>Did checkout errors rise after the deploy?</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <b>metrics-server</b> is a different, much smaller component: it keeps
+        only the latest CPU/memory value per pod and node in memory, and serves
+        the Metrics API used by <code>kubectl top</code>, HPA and VPA. It is not
+        a monitoring system – no history, no alerts.
+      </p>
+
+      <h4>2. How it usually fits together</h4>
+      <pre><code>  apps (/metrics) ─┐
+  node-exporter ───┤
+  kubelet/cAdvisor ┼──&gt; Prometheus ──&gt; Grafana (dashboards)
+  kube-state-metr. ┤        │
+  control plane ───┘        └──&gt; Alertmanager ──&gt; Slack / PagerDuty / email
+
+  apps ──(OTel SDK)──&gt; OpenTelemetry Collector ──&gt; Tempo / Jaeger (traces)</code></pre>
+      <p>
+        The common way to install this is the <b>kube-prometheus-stack</b> Helm
+        chart, which uses the Prometheus Operator. Applications declare what to
+        scrape with a <code>ServiceMonitor</code> or <code>PodMonitor</code>
+        custom resource instead of editing Prometheus config:
+      </p>
+      <pre><code>apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: orders-api
+  namespace: shop
+spec:
+  selector:
+    matchLabels:
+      app: orders-api      # the Service to scrape
+  endpoints:
+    - port: http-metrics   # named port on the Service
+      path: /metrics
+      interval: 30s</code></pre>
+      <p>
+        For long retention or many clusters, Prometheus data is shipped to a
+        scalable backend (Thanos, Mimir, a managed Prometheus service).
+      </p>
+
+      <h4>3. What to alert on</h4>
+      <p>
+        Alert on <b>symptoms</b> that users feel, and use cluster metrics to
+        diagnose. A good split:
+      </p>
+      <ul>
+        <li>
+          <b>Paging alerts (wake someone up):</b> error rate and latency SLOs of
+          user-facing services (the RED method: Rate, Errors, Duration),
+          Deployments with zero available replicas, API server down.
+        </li>
+        <li>
+          <b>Ticket alerts (fix during working hours):</b> nodes NotReady, pods
+          crash-looping or Pending for over 15 minutes, PVC above 85% full,
+          certificates expiring within 14 days, failed CronJobs, sustained CPU
+          throttling, etcd DB size growing, nodes with memory/disk pressure.
+        </li>
+      </ul>
+      <p>
+        For infrastructure, the USE method (Utilisation, Saturation, Errors)
+        per resource is a good checklist.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Latency of the orders API rises from 80 ms to 900 ms (p99). Average
+          CPU usage on the dashboard is only 40% of the limit. Investigation
+          with the metrics above:
+        </p>
+        <pre><code># fraction of CPU periods in which the container was throttled
+sum(rate(container_cpu_cfs_throttled_periods_total{pod=~"orders-api.*"}[5m]))
+/
+sum(rate(container_cpu_cfs_periods_total{pod=~"orders-api.*"}[5m]))
+# result: 0.62  -&gt; 62% of periods throttled</code></pre>
+        <p>
+          The average hides bursts: each request spikes CPU on many threads and
+          hits the CFS quota (<a href="k8s-study-2-networking.html#q23">Q23</a>). Raising/removing the CPU
+          limit brings p99 back to 90 ms. Without cAdvisor's throttling metric,
+          this would look like a mystery "slow app".
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Confusing metrics-server with monitoring – it has no history and no
+            alerts.
+          </li>
+          <li>
+            Alerting on causes instead of symptoms ("CPU &gt; 80%") → alert
+            fatigue, people start ignoring pages.
+          </li>
+          <li>
+            High-cardinality labels (user IDs, request IDs, full URLs) in
+            application metrics – Prometheus memory explodes.
+          </li>
+          <li>
+            Monitoring stack running inside the same cluster only: when the
+            cluster is down, so is the alerting. Have at least an external
+            heartbeat / dead-man's-switch alert.
+          </li>
+          <li>Looking at average CPU and missing throttling or p99 latency.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Name the sources and what each answers (node-exporter, cAdvisor,
+          kube-state-metrics, app metrics), the pipeline (Prometheus, Grafana,
+          Alertmanager, usually via kube-prometheus-stack), and your alerting
+          philosophy (symptoms first, SLO-based). Mention that metrics-server
+          only feeds <code>kubectl top</code> and HPA. Follow-ups: how do you
+          monitor multiple clusters (remote write to Thanos/Mimir), how do you
+          avoid alert fatigue, what is cardinality.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q41">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q42">
+      <h3>Q42. How do you set up logging?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Apps write structured logs to stdout/stderr; the container runtime
+          stores them as files on the node; a DaemonSet agent (Fluent Bit,
+          Grafana Alloy, OpenTelemetry Collector) tails those files, adds pod
+          metadata and ships them to a central backend such as Loki or
+          Elasticsearch/OpenSearch. Node-local logs disappear with the pod or
+          node, so central shipping is mandatory in production.
+        </p>
+      </div>
+
+      <h4>1. Where container logs actually live</h4>
+      <p>
+        When a container writes to stdout/stderr, the container runtime
+        (containerd) captures the stream and writes it to a file on the node:
+      </p>
+      <pre><code>/var/log/pods/&lt;namespace&gt;_&lt;pod&gt;_&lt;pod-uid&gt;/&lt;container&gt;/0.log
+/var/log/containers/&lt;pod&gt;_&lt;namespace&gt;_&lt;container&gt;-&lt;id&gt;.log   (symlinks)</code></pre>
+      <p>
+        <code>kubectl logs</code> asks the API server, which asks the kubelet on
+        that node to read this file. Consequences:
+      </p>
+      <ul>
+        <li>
+          The kubelet <b>rotates</b> these files (by default around 10 MiB and a
+          handful of files per container), so <code>kubectl logs</code> only
+          shows recent output.
+        </li>
+        <li>
+          When the pod is deleted, its log directory is removed. When the node
+          is gone, its logs are gone.
+        </li>
+        <li>
+          <code>kubectl logs --previous</code> works only for the immediately
+          previous container instance, and only while the pod still exists.
+        </li>
+      </ul>
+      <p>
+        So for anything older than a few minutes – or any incident
+        investigation – you need logs shipped elsewhere.
+      </p>
+
+      <h4>2. The node-agent pattern</h4>
+      <pre><code>node 1                         node 2
+┌──────────────────────────┐   ┌──────────────────────────┐
+│ app pods -&gt; stdout       │   │ app pods -&gt; stdout       │
+│   -&gt; /var/log/pods/...   │   │   -&gt; /var/log/pods/...   │
+│ log agent (DaemonSet)    │   │ log agent (DaemonSet)    │
+│   tail + add metadata ───┼─┐ │   tail + add metadata ───┼─┐
+└──────────────────────────┘ │ └──────────────────────────┘ │
+                             └──────────────┬───────────────┘
+                                            ▼
+                         Loki  or  Elasticsearch / OpenSearch
+                                            ▼
+                                 Grafana  or  Kibana / Dashboards</code></pre>
+      <p>
+        The agent runs as a DaemonSet (<a href="k8s-study-3-advanced.html#q28">Q28</a>), mounts the
+        node's <code>/var/log</code> read-only, and enriches every line with
+        Kubernetes metadata from the API (namespace, pod, container, labels,
+        node) so you can filter by <code>app=orders-api</code> later. Common
+        agents: <b>Fluent Bit</b> (very light), <b>Grafana Alloy</b> (the
+        successor of Promtail, which is deprecated), and the
+        <b>OpenTelemetry Collector</b> (one agent for logs, metrics and traces).
+      </p>
+      <p>
+        A <b>sidecar</b> log shipper (<a href="k8s-study-3-advanced.html#q32">Q32</a>) is only needed
+        when an app can't write to stdout (it insists on writing files) – it
+        costs one extra container per pod, so the DaemonSet is the default.
+      </p>
+
+      <h4>3. Choosing a backend</h4>
+      <table>
+        <thead>
+          <tr><th>Backend</th><th>How it indexes</th><th>Trade-off</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Loki + Grafana</b></td>
+            <td>
+              Indexes only labels (namespace, app, pod); log text is compressed
+              in object storage and scanned at query time.
+            </td>
+            <td>
+              Cheap and simple; full-text search over huge ranges is slower.
+              Keep label cardinality low.
+            </td>
+          </tr>
+          <tr>
+            <td><b>Elasticsearch / OpenSearch + Kibana</b></td>
+            <td>Full-text inverted index over every field.</td>
+            <td>
+              Powerful search and analytics; much more CPU, RAM and disk to run.
+            </td>
+          </tr>
+          <tr>
+            <td><b>Cloud logging</b> (CloudWatch, Azure Monitor, Cloud Logging)</td>
+            <td>Managed.</td>
+            <td>No operations, but cost grows with volume.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>4. What the application should do</h4>
+      <ul>
+        <li>
+          Log to <b>stdout/stderr</b>, never to files inside the container.
+        </li>
+        <li>
+          Log <b>structured JSON</b>: level, message, timestamp, trace ID, and
+          request fields as separate keys, so the backend can filter on them.
+        </li>
+        <li>
+          Include the <b>trace ID</b> so you can jump from a log line to the
+          distributed trace (<a href="#q41">Q41</a>).
+        </li>
+        <li>Never log secrets, tokens or personal data.</li>
+      </ul>
+      <p>
+        Separately, enable <b>API server audit logs</b> (who did what through
+        the API) – they are configured with an audit policy on the API server on
+        self-managed clusters, or switched on in the provider's settings on
+        managed ones. They answer "who deleted this namespace?".
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A pod of <code>orders-api</code> crashed at 03:12 and was replaced; by
+          the morning the pod (and its local logs) no longer exists. With Loki
+          you query:
+        </p>
+        <pre><code>{namespace="shop", app="orders-api"} | json | level="error"</code></pre>
+        <p>
+          You find
+          <code>{"level":"error","msg":"connection pool exhausted","traceId":"4bf9..."}</code>
+          at 03:11:58 from that pod, follow the trace ID to the trace showing a
+          slow database call, and correlate with a database maintenance window
+          at 03:10. None of this would be possible with
+          <code>kubectl logs</code>.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Apps writing logs to files inside the container: the agent never
+            sees them, and the writable layer fills up (can cause eviction for
+            ephemeral storage – <a href="k8s-study-5-scenarios.html#q57">Q57</a>).
+          </li>
+          <li>
+            Multi-line stack traces split into many log entries – configure
+            multiline parsing or, better, log JSON.
+          </li>
+          <li>
+            Using high-cardinality values (pod UID, request ID) as Loki labels.
+          </li>
+          <li>
+            No retention policy → the logging cluster becomes the most expensive
+            system you run.
+          </li>
+          <li>Logging tokens, passwords or personal data.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Containers log to stdout; the runtime writes files on the node that
+          rotate and vanish with the pod, so we run a DaemonSet agent – Fluent
+          Bit or Alloy – that adds Kubernetes metadata and ships to Loki, or to
+          OpenSearch when we need full-text analytics. Apps log JSON with trace
+          IDs, and API audit logging is enabled separately." Follow-ups: sidecar
+          vs DaemonSet, Loki vs Elasticsearch, how to control log cost.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q42">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q43">
+      <h3>Q43. How do you prevent pods from running privileged or as root?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          At the pod level, set a <code>securityContext</code>
+          (<code>runAsNonRoot</code>, <code>allowPrivilegeEscalation: false</code>,
+          drop all capabilities, <code>seccompProfile: RuntimeDefault</code>,
+          read-only root filesystem). At the cluster level, <i>enforce</i> it
+          with Pod Security Admission labels on namespaces (the
+          <code>restricted</code> profile), and use a policy engine (Kyverno,
+          Gatekeeper, ValidatingAdmissionPolicy) for rules beyond that.
+        </p>
+      </div>
+
+      <h4>1. Why root in a container matters</h4>
+      <p>
+        A container is just a process on the host kernel
+        (<a href="docker.html">see the Docker page</a>). If it runs as UID 0 and
+        an attacker finds a way out – a kernel bug, a mounted host path, a
+        dangerous capability – they are root on the node, and from the node
+        they can read every Secret mounted into every pod there. Privileged
+        containers (<code>privileged: true</code>) are worse: they get all
+        capabilities and access to host devices, which is practically the same
+        as root on the host. So the goal is defence in depth: even if the app is
+        compromised, the attacker is an unprivileged user with no capabilities.
+      </p>
+
+      <h4>2. The securityContext, field by field</h4>
+      <pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: api
+spec:
+  securityContext:                  # pod level: applies to all containers
+    runAsNonRoot: true
+    runAsUser: 10001                # numeric UID (see pitfalls)
+    runAsGroup: 10001
+    fsGroup: 10001                  # group ownership for mounted volumes
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: api
+      image: registry.example.com/api:1.8.0
+      securityContext:              # container level
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp           # writable scratch space
+  volumes:
+    - name: tmp
+      emptyDir: {}</code></pre>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>runAsNonRoot: true</code></td>
+            <td>
+              The kubelet refuses to start the container if it would run as UID
+              0. It is a check, not a change of user.
+            </td>
+          </tr>
+          <tr>
+            <td><code>runAsUser</code></td>
+            <td>Overrides the image's USER with this UID.</td>
+          </tr>
+          <tr>
+            <td><code>allowPrivilegeEscalation: false</code></td>
+            <td>
+              Sets the Linux <code>no_new_privs</code> flag: setuid binaries
+              (like <code>sudo</code>) can't raise privileges.
+            </td>
+          </tr>
+          <tr>
+            <td><code>capabilities.drop: ["ALL"]</code></td>
+            <td>
+              Removes all Linux capabilities (fine-grained root powers such as
+              <code>NET_ADMIN</code>, <code>SYS_ADMIN</code>). Add back only what
+              is needed, e.g. <code>NET_BIND_SERVICE</code> to bind port 80.
+            </td>
+          </tr>
+          <tr>
+            <td><code>seccompProfile: RuntimeDefault</code></td>
+            <td>
+              Applies the runtime's default syscall filter, blocking rarely used
+              dangerous syscalls.
+            </td>
+          </tr>
+          <tr>
+            <td><code>readOnlyRootFilesystem: true</code></td>
+            <td>
+              Attackers can't drop tools or modify binaries; the app writes only
+              to explicit volumes such as an <code>emptyDir</code> on
+              <code>/tmp</code>.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Enforcing it: Pod Security Admission</h4>
+      <p>
+        Setting good defaults in your own manifests is not enough – you need
+        the cluster to <i>reject</i> bad pods from anyone. PodSecurityPolicy was
+        removed in 1.25; its built-in replacement is <b>Pod Security
+        Admission</b> (PSA). It implements three predefined <b>Pod Security
+        Standards</b>:
+      </p>
+      <ul>
+        <li>
+          <b>privileged</b> – no restrictions (for system namespaces such as CNI
+          or storage agents).
+        </li>
+        <li>
+          <b>baseline</b> – blocks known privilege escalations: privileged
+          containers, host namespaces (hostNetwork, hostPID), hostPath volumes,
+          dangerous capabilities.
+        </li>
+        <li>
+          <b>restricted</b> – baseline plus hardening: must run as non-root,
+          <code>allowPrivilegeEscalation: false</code>, drop ALL capabilities,
+          seccomp RuntimeDefault, limited volume types.
+        </li>
+      </ul>
+      <p>
+        You choose a level per namespace and a <b>mode</b>: <code>enforce</code>
+        (reject), <code>audit</code> (record in audit log), <code>warn</code>
+        (return a warning to the user).
+      </p>
+      <pre><code>kubectl label namespace shop \
+  pod-security.kubernetes.io/enforce=baseline \
+  pod-security.kubernetes.io/warn=restricted \
+  pod-security.kubernetes.io/audit=restricted
+
+# dry run: which existing pods would violate "restricted"?
+kubectl label --dry-run=server --overwrite namespace shop \
+  pod-security.kubernetes.io/enforce=restricted</code></pre>
+      <p>
+        PSA is deliberately simple: it cannot express "images must come from
+        our registry" or "every pod needs a team label". For custom rules use a
+        policy engine – <b>Kyverno</b>, <b>OPA Gatekeeper</b>, or the built-in
+        CEL-based <b>ValidatingAdmissionPolicy</b> (<a href="k8s-study-3-advanced.html#q34">Q34</a>).
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>Rolling out <code>restricted</code> to an existing namespace safely:</p>
+        <ol>
+          <li>
+            Add <code>warn=restricted</code> and <code>audit=restricted</code>,
+            keep <code>enforce=baseline</code>. Developers see warnings on every
+            <code>kubectl apply</code>; nothing breaks.
+          </li>
+          <li>
+            The server-side dry run lists 3 of 20 workloads failing: two lack
+            <code>seccompProfile</code>, one runs as root because its image has
+            no USER.
+          </li>
+          <li>
+            Fix the manifests and rebuild the image with a numeric non-root
+            user.
+          </li>
+          <li>
+            Switch to <code>enforce=restricted</code>. A later attempt to deploy
+            a pod with <code>privileged: true</code> is rejected immediately:
+            <code>violates PodSecurity "restricted:latest": privileged ...</code>
+          </li>
+        </ol>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            <code>runAsNonRoot: true</code> with an image whose USER is a
+            <i>name</i> (e.g. <code>USER app</code>): the kubelet can't verify
+            the name isn't root and refuses to start the container. Use a
+            numeric UID in the image or set <code>runAsUser</code>.
+          </li>
+          <li>
+            PSA <code>enforce</code> checks <b>pods</b>, not Deployments: the
+            Deployment is accepted, but the ReplicaSet can't create pods. Look
+            at the ReplicaSet events (warn mode also checks workload objects).
+          </li>
+          <li>
+            Read-only root filesystem without a writable <code>/tmp</code> →
+            the app crashes when it writes temp files.
+          </li>
+          <li>
+            Non-root app trying to listen on port 80 – use a port above 1024 or
+            add only <code>NET_BIND_SERVICE</code>.
+          </li>
+          <li>
+            Labelling <code>kube-system</code> restricted and breaking CNI/CSI
+            agents that legitimately need privileges.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Two layers: "Workloads set a hardened securityContext – non-root
+          numeric UID, no privilege escalation, drop ALL, seccomp
+          RuntimeDefault, read-only root FS. The cluster enforces it with Pod
+          Security Admission namespace labels, rolled out via warn and audit
+          before enforce, plus Kyverno or ValidatingAdmissionPolicy for custom
+          rules." Mention PSP was removed in 1.25. Follow-ups: difference
+          between baseline and restricted, what capabilities are, how you
+          handle system namespaces that need privileges.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q43">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q44">
+      <h3>Q44. How do you secure a Kubernetes cluster overall?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Use layered defence – the "4C" model: Cloud (network and IAM around the
+          cluster), Cluster (API access, RBAC, admission policies, network
+          policies, secrets encryption, audit, upgrades), Container (trusted
+          minimal images, non-root, no privileges) and Code (secrets handling,
+          dependencies, mTLS). Add runtime detection for what prevention misses.
+          Each outer layer protects the inner ones; none is enough alone.
+        </p>
+      </div>
+
+      <h4>1. The 4C model</h4>
+      <pre><code>┌─────────────────────────────── Cloud / infrastructure ─┐
+│  ┌────────────────────────────────────── Cluster ───┐  │
+│  │  ┌─────────────────────────── Container ──────┐  │  │
+│  │  │  ┌──────────── Code ──────────┐            │  │  │
+│  │  │  │  app, dependencies, secrets│            │  │  │
+│  │  │  └────────────────────────────┘            │  │  │
+│  │  └────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────┘</code></pre>
+      <p>
+        You can't secure the code if anyone on the internet can reach the API
+        server with a stolen token, and a perfect cluster config does not help
+        if the image contains a critical vulnerability. Think about each layer.
+      </p>
+
+      <h4>2. Cloud / infrastructure</h4>
+      <ul>
+        <li>
+          API server endpoint <b>private</b>, or restricted to known IP ranges /
+          VPN.
+        </li>
+        <li>Nodes in private subnets, no public IPs, no SSH from the internet.</li>
+        <li>
+          Least-privilege cloud IAM for node roles – a node role that can
+          modify IAM or read all S3 buckets turns any pod escape into an
+          account compromise.
+        </li>
+        <li>
+          Block pod access to the cloud metadata endpoint (or require
+          IMDSv2 with a hop limit) so pods can't steal the node's credentials.
+        </li>
+        <li>Encrypted disks and etcd volumes.</li>
+      </ul>
+
+      <h4>3. Cluster</h4>
+      <ul>
+        <li>
+          <b>Authentication:</b> SSO/OIDC for humans, short-lived credentials,
+          no shared admin kubeconfigs; anonymous auth disabled; kubelet API
+          (port 10250) requires authentication.
+        </li>
+        <li>
+          <b>Authorization:</b> RBAC with least privilege (<a href="k8s-study-2-networking.html#q14">Q14</a>);
+          review who has <code>cluster-admin</code>, <code>list secrets</code>,
+          <code>create pods</code>, <code>escalate/bind/impersonate</code>.
+        </li>
+        <li>
+          <b>Admission:</b> Pod Security Admission (<a href="#q43">Q43</a>) plus
+          policies: allowed registries, signed images, required labels, no
+          <code>latest</code> tag (<a href="k8s-study-3-advanced.html#q34">Q34</a>).
+        </li>
+        <li>
+          <b>Network:</b> default-deny NetworkPolicies per namespace
+          (<a href="k8s-study-2-networking.html#q26">Q26</a>), egress control.
+        </li>
+        <li>
+          <b>Data:</b> etcd encryption at rest (<a href="#q46">Q46</a>), external
+          secret stores, etcd reachable only from the API servers.
+        </li>
+        <li>
+          <b>Visibility and hygiene:</b> API audit logs, regular upgrades
+          (<a href="#q40">Q40</a>), certificate rotation, CIS benchmark checks
+          (<code>kube-bench</code>).
+        </li>
+      </ul>
+
+      <h4>4. Container and Code</h4>
+      <ul>
+        <li>
+          Minimal base images (distroless, chiseled), scanned in CI and in the
+          registry (Trivy, Grype), rebuilt regularly for patches.
+        </li>
+        <li>
+          Images <b>signed</b> in the pipeline (cosign) and signatures verified
+          at admission, so only your pipeline's images run.
+        </li>
+        <li>
+          Non-root, read-only filesystem, no capabilities – the
+          securityContext of Q43.
+        </li>
+        <li>
+          Secrets from a secrets manager, never in images, env files in git or
+          logs; dependency scanning; mTLS between services where needed
+          (<a href="k8s-study-3-advanced.html#q30">Q30</a>).
+        </li>
+      </ul>
+
+      <h4>5. Detection: assume something gets through</h4>
+      <p>
+        Prevention can fail, so watch behaviour at runtime: <b>Falco</b> or
+        <b>Tetragon</b> observe syscalls and alert on suspicious activity – a
+        shell spawned in a production container, a read of
+        <code>/etc/shadow</code>, an unexpected outbound connection. Combined
+        with audit logs, this tells you what happened and when.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Attack path: a web app has a remote code execution bug. Watch how each
+          layer stops or limits it:
+        </p>
+        <ol>
+          <li>
+            <b>Code:</b> the vulnerable dependency would have been flagged by the
+            scanner – but suppose it was a zero-day.
+          </li>
+          <li>
+            <b>Container:</b> the attacker gets a shell as UID 10001, with no
+            capabilities and a read-only filesystem – they can't install tools
+            or escalate with setuid binaries. Distroless image: there isn't even
+            a shell, so they must work with only the app's runtime.
+          </li>
+          <li>
+            <b>Cluster:</b> the pod's ServiceAccount token is not mounted
+            (<code>automountServiceAccountToken: false</code>), so no API access.
+            NetworkPolicy allows the pod to reach only its database, so lateral
+            movement to other services fails.
+          </li>
+          <li>
+            <b>Cloud:</b> the metadata endpoint is blocked, so the node's IAM
+            role can't be stolen.
+          </li>
+          <li>
+            <b>Detection:</b> Falco alerts "unexpected process spawned in
+            container" within seconds; the pod is isolated and investigated.
+          </li>
+        </ol>
+        <p>
+          One bug in the code did not become a cluster or cloud compromise.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Public API endpoint with long-lived admin kubeconfigs shared over
+            chat.
+          </li>
+          <li>
+            Granting <code>cluster-admin</code> to CI pipelines or operators
+            "because it was easier".
+          </li>
+          <li>
+            Thinking namespaces isolate network traffic – they don't without
+            NetworkPolicies.
+          </li>
+          <li>
+            Treating Secrets as encrypted – they are base64 unless encryption at
+            rest is configured.
+          </li>
+          <li>Never upgrading, so known CVEs stay open for years.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Use the 4C model as a structure and give two or three concrete
+          controls per layer, then mention runtime detection. Interviewers like
+          the "attack path" framing: "even if the app is compromised, non-root
+          plus no SA token plus NetworkPolicy plus blocked metadata endpoint
+          keeps the blast radius to that pod". Follow-ups: how do you secure CI
+          access to the cluster (GitOps pull model, <a href="k8s-study-5-scenarios.html#q60">Q60</a>), how
+          do you verify image signatures, what does kube-bench check.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q44">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q45">
+      <h3>Q45. How do you make the cluster itself highly available?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Run 3 (or 5) control-plane nodes across availability zones behind a
+          load balancer, with an etcd cluster of an odd number of members so it
+          keeps quorum when one fails. Spread worker nodes across zones with an
+          autoscaler and spare capacity, and make the workloads themselves HA
+          (replicas spread across zones, PDBs, several CoreDNS replicas). For
+          losing a whole region you need more than one cluster.
+        </p>
+      </div>
+
+      <h4>1. What "the cluster is down" can mean</h4>
+      <ul>
+        <li>
+          <b>Control plane down:</b> running pods keep serving traffic (kubelets
+          and the dataplane keep working), but nothing can change – no deploys,
+          no scaling, no rescheduling of failed pods, no self-healing.
+        </li>
+        <li>
+          <b>Nodes / zone down:</b> the pods on them are gone; whether users
+          notice depends on whether replicas exist elsewhere and there is
+          capacity to replace them.
+        </li>
+      </ul>
+      <p>So HA has to cover both: the control plane and the data plane.</p>
+
+      <h4>2. Control plane HA: each component behaves differently</h4>
+      <table>
+        <thead>
+          <tr><th>Component</th><th>How it is made HA</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>kube-apiserver</b></td>
+            <td>
+              Stateless, so all instances are active at once behind a load
+              balancer (cloud LB, or kube-vip / HAProxy + keepalived on bare
+              metal). Clients and kubelets use the LB address – in kubeadm,
+              <code>--control-plane-endpoint</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><b>kube-scheduler, kube-controller-manager</b></td>
+            <td>
+              Active/standby via <b>leader election</b>: every instance runs, but
+              only the one holding a Lease object in <code>kube-system</code>
+              acts. If the leader dies, its lease expires and another instance
+              takes over within seconds. Two active schedulers would make
+              conflicting decisions – hence one leader.
+            </td>
+          </tr>
+          <tr>
+            <td><b>etcd</b></td>
+            <td>
+              A Raft cluster that needs a <b>quorum</b> (majority) to accept
+              writes. Either "stacked" on the control-plane nodes or on separate
+              "external" etcd nodes.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. etcd quorum arithmetic</h4>
+      <p>
+        Quorum = floor(n / 2) + 1. A write is committed only when a majority of
+        members has persisted it, which prevents two halves of a split cluster
+        from both accepting writes.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Members</th><th>Quorum</th><th>Failures tolerated</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>1</td><td>0</td></tr>
+          <tr><td>2</td><td>2</td><td>0 (worse than 1: two things that can fail)</td></tr>
+          <tr><td>3</td><td>2</td><td>1</td></tr>
+          <tr><td>4</td><td>3</td><td>1 (no gain over 3)</td></tr>
+          <tr><td>5</td><td>3</td><td>2</td></tr>
+        </tbody>
+      </table>
+      <p>
+        That's why etcd clusters are 3 or 5 members. More than 5 slows writes
+        (every write waits for more acknowledgements) without real benefit.
+        etcd is also very sensitive to <b>disk and network latency</b>: use fast
+        SSDs and keep members in zones of one region, not across continents.
+      </p>
+
+      <h4>4. Data plane and workload HA</h4>
+      <ul>
+        <li>
+          Worker node pools in at least <b>3 zones</b>, with Cluster Autoscaler
+          or Karpenter to replace capacity.
+        </li>
+        <li>
+          <b>Spare capacity</b> (headroom) so that losing a zone still leaves
+          room for the evicted pods – running at 95% utilisation means a zone
+          failure leaves pods Pending.
+        </li>
+        <li>
+          Workloads: several replicas spread with topology spread constraints
+          (<a href="k8s-study-3-advanced.html#q31">Q31</a>), PDBs (<a href="k8s-study-2-networking.html#q25">Q25</a>), readiness
+          probes, and HA for cluster add-ons that everything depends on: CoreDNS,
+          ingress/gateway controllers, cert-manager webhooks.
+        </li>
+      </ul>
+      <p>
+        Managed services (EKS, AKS, GKE) give you an HA control plane by
+        default; you are still responsible for nodes, zones and workloads.
+        Against a whole <b>region</b> failing, the answer is multiple clusters in
+        different regions with global traffic routing – one cluster is never
+        multi-region.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Setup: 3 control-plane nodes (one per zone a/b/c) with stacked etcd,
+          9 workers (3 per zone), app with 6 replicas spread
+          <code>maxSkew: 1</code> across zones. Zone b goes down:
+        </p>
+        <ul>
+          <li>
+            etcd: 2 of 3 members left = quorum of 2 kept → writes continue. One
+            more failure would make etcd read-only and the API unusable for
+            changes.
+          </li>
+          <li>
+            API server: LB health checks drop the zone-b instance; clients
+            continue via a and c.
+          </li>
+          <li>
+            Scheduler: if the leader was in zone b, its lease expires and an
+            instance in a or c takes over in seconds.
+          </li>
+          <li>
+            App: 2 of 6 replicas lost, 4 keep serving. After the unreachable
+            taint timeout (~5 minutes, <a href="k8s-study-5-scenarios.html#q59">Q59</a>) replacements are
+            scheduled in a and c – which works only because the workers had
+            ~35% headroom.
+          </li>
+        </ul>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            2 or 4 etcd members – more failure points, no extra tolerance.
+          </li>
+          <li>
+            Three control-plane nodes, but all in one zone or on one hypervisor
+            host.
+          </li>
+          <li>
+            Kubelets pointing at one API server's IP instead of the load
+            balancer – that node becomes a single point of failure.
+          </li>
+          <li>
+            Single-replica CoreDNS or ingress controller: the cluster is "HA" but
+            DNS or all external traffic is not.
+          </li>
+          <li>Spreading etcd across regions → high latency, unstable leader.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Separate control plane from data plane, then explain per component:
+          API servers active-active behind an LB, scheduler and controller
+          manager leader-elected, etcd 3 or 5 members with quorum math. Then
+          zones, headroom, and workload spreading. End with "managed control
+          planes are HA already; multi-region needs multiple clusters".
+          Follow-ups: what happens when etcd loses quorum (the API stops
+          accepting writes; running pods keep running), stacked vs external
+          etcd.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q45">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q46">
+      <h3>Q46. How do you encrypt Secrets at rest in etcd?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Give the API server an <code>EncryptionConfiguration</code> file via
+          <code>--encryption-provider-config</code>. The API server then encrypts
+          Secrets before writing them to etcd and decrypts them on read. Prefer
+          the <code>kms</code> v2 provider (key in an external KMS) over a local
+          key. Existing Secrets stay unencrypted until rewritten, and keys must
+          be rotated with a specific ordering.
+        </p>
+      </div>
+
+      <h4>1. What problem this solves (and what it doesn't)</h4>
+      <p>
+        Without encryption at rest, a Secret is stored in etcd as plain
+        protobuf with base64 values. Anyone who gets an etcd backup file, a disk
+        snapshot of a control-plane node, or direct etcd access can read every
+        password in the cluster.
+      </p>
+      <p>
+        Encryption at rest protects <b>data on disk and in backups</b>. It does
+        <b>not</b> protect against someone who can call the API with
+        <code>get secrets</code> permission – the API server decrypts for them.
+        That is RBAC's job (<a href="k8s-study-2-networking.html#q14">Q14</a>).
+      </p>
+
+      <h4>2. How it works: the providers list</h4>
+      <pre><code>apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources: ["secrets"]       # can also include configmaps, custom resources
+    providers:
+      - kms:                     # 1st provider: used to ENCRYPT new writes
+          apiVersion: v2
+          name: cloud-kms
+          endpoint: unix:///var/run/kms-plugin.sock
+      - aescbc:                  # later providers: only used to DECRYPT
+          keys:
+            - name: key1
+              secret: &lt;BASE64_32_BYTE_KEY&gt;
+      - identity: {}             # = "no encryption": reads old plain data</code></pre>
+      <ul>
+        <li>
+          <b>Write:</b> the API server always encrypts with the <b>first</b>
+          provider in the list, and stores a prefix telling which provider and
+          key was used, e.g. <code>k8s:enc:aescbc:v1:key1:</code>.
+        </li>
+        <li>
+          <b>Read:</b> it looks at the prefix and tries the matching provider. If
+          there is no prefix, the data is plain and only <code>identity</code>
+          can read it.
+        </li>
+      </ul>
+      <table>
+        <thead>
+          <tr><th>Provider</th><th>Where the key lives</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>identity</code></td>
+            <td>–</td>
+            <td>No encryption. The default if nothing is configured.</td>
+          </tr>
+          <tr>
+            <td><code>aescbc</code>, <code>aesgcm</code>, <code>secretbox</code></td>
+            <td>In the config file on the control-plane node</td>
+            <td>
+              Simple, but the key sits on the same disk as etcd backups' source;
+              rotation is manual. aesgcm needs frequent key rotation.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kms</code> (v2)</td>
+            <td>External KMS (cloud KMS, Vault, HSM)</td>
+            <td>
+              <b>Envelope encryption</b>: a data encryption key (DEK) encrypts the
+              data; the KMS key encrypts the DEK. The master key never leaves the
+              KMS, access is audited, rotation is easier. Recommended.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Enabling it on a kubeadm cluster</h4>
+      <ol>
+        <li>
+          Create the file on <b>every</b> control-plane node, e.g.
+          <code>/etc/kubernetes/enc/enc.yaml</code> (for aescbc, generate a key
+          with <code>head -c 32 /dev/urandom | base64</code>).
+        </li>
+        <li>
+          Edit <code>/etc/kubernetes/manifests/kube-apiserver.yaml</code>: add
+          <code>--encryption-provider-config=/etc/kubernetes/enc/enc.yaml</code>
+          and a hostPath volume + volumeMount for that directory. The kubelet
+          restarts the API server pod automatically.
+        </li>
+        <li>
+          Rewrite existing Secrets so they are stored encrypted:
+          <pre><code>kubectl get secrets -A -o json | kubectl replace -f -</code></pre>
+        </li>
+        <li>Verify directly in etcd (next section).</li>
+      </ol>
+
+      <h4>4. Verifying and rotating keys</h4>
+      <pre><code>ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  get /registry/secrets/default/db-password | hexdump -C | head
+# encrypted: starts with  k8s:enc:aescbc:v1:key1:  followed by random bytes
+# NOT encrypted: you can read the password in the dump</code></pre>
+      <p>
+        Rotation with several API servers must be done in steps, because during
+        the change some API servers may write with a key that others can't yet
+        read:
+      </p>
+      <ol>
+        <li>Add <code>key2</code> as the <i>second</i> key on all API servers; restart all.</li>
+        <li>Move <code>key2</code> to the <i>first</i> position on all API servers; restart all.</li>
+        <li>Rewrite all Secrets (<code>kubectl replace</code> as above).</li>
+        <li>Remove <code>key1</code>; restart all.</li>
+      </ol>
+      <p>
+        Managed clusters encrypt etcd storage by default, and most let you add
+        envelope encryption with your own KMS key as a setting.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A team enabled <code>aescbc</code> on Monday. On Wednesday a security
+          review takes an etcd snapshot and greps it: 140 of 150 Secrets are
+          still readable in plain text. Reason: only Secrets created or updated
+          after Monday were encrypted; the old ones were never rewritten. After
+          running <code>kubectl get secrets -A -o json | kubectl replace -f -</code>,
+          all 150 entries in etcd start with
+          <code>k8s:enc:aescbc:v1:key1:</code>. The review also points out that
+          the aescbc key is stored on the same node disk as the etcd data, so a
+          full disk image still exposes everything – the team plans a move to
+          KMS v2.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>Forgetting to rewrite existing Secrets after enabling encryption.</li>
+          <li>
+            Putting <code>identity</code> <b>first</b> – then nothing new is
+            encrypted, although the config "has" a key.
+          </li>
+          <li>
+            Different config files on different API servers in HA – some
+            instances can't read what others wrote.
+          </li>
+          <li>
+            Losing the encryption key (or KMS access): the Secrets in etcd and in
+            every backup become unreadable. Back up the key separately from the
+            etcd snapshots.
+          </li>
+          <li>
+            Believing encryption at rest protects against users with
+            <code>get secrets</code> RBAC permission – it doesn't.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Secrets are only base64 in etcd by default. I configure an
+          EncryptionConfiguration on the API servers – ideally KMS v2 envelope
+          encryption so the master key stays in the KMS – then rewrite existing
+          Secrets and verify in etcd that values carry the
+          <code>k8s:enc:</code> prefix. The first provider encrypts; the rest
+          only decrypt, which is also how key rotation works." Follow-ups: what
+          is envelope encryption, how to rotate, does this protect against RBAC
+          misconfigurations (no).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q46">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q47">
+      <h3>
+        Q47. Several teams share one cluster. How do you stop one team affecting
+        another?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Give each team its own namespaces and wrap every namespace in the
+          same set of guardrails: RBAC limited to that namespace, ResourceQuota
+          and LimitRange for capacity, NetworkPolicies for traffic, Pod Security
+          for privileges, and priority classes for who wins under pressure.
+          This is "soft" multi-tenancy for teams that trust each other; untrusted
+          tenants need separate clusters, virtual clusters or sandboxed
+          runtimes.
+        </p>
+      </div>
+
+      <h4>1. The ways one team can hurt another</h4>
+      <table>
+        <thead>
+          <tr><th>Problem</th><th>Guardrail</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Deletes or edits another team's Deployment</td>
+            <td>RBAC: RoleBindings only in the team's own namespaces (<a href="k8s-study-2-networking.html#q14">Q14</a>)</td>
+          </tr>
+          <tr>
+            <td>Deploys 200 replicas and eats all cluster capacity</td>
+            <td>ResourceQuota per namespace (<a href="#q48">Q48</a>)</td>
+          </tr>
+          <tr>
+            <td>Pods without requests overpack nodes, then get everyone evicted</td>
+            <td>LimitRange defaults (<a href="#q48">Q48</a>), quota requiring requests</td>
+          </tr>
+          <tr>
+            <td>A compromised pod scans and calls other teams' services</td>
+            <td>Default-deny NetworkPolicies (<a href="k8s-study-2-networking.html#q26">Q26</a>)</td>
+          </tr>
+          <tr>
+            <td>A privileged pod escapes to the node and reads others' Secrets</td>
+            <td>Pod Security Admission restricted/baseline (<a href="#q43">Q43</a>)</td>
+          </tr>
+          <tr>
+            <td>A batch job starves a critical service when the cluster is full</td>
+            <td>PriorityClasses + preemption</td>
+          </tr>
+          <tr>
+            <td>A noisy or GPU workload disturbs others on the same node</td>
+            <td>Dedicated node pools with taints/tolerations (<a href="k8s-study-3-advanced.html#q31">Q31</a>)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>2. Make it a template, not a manual setup</h4>
+      <p>
+        The guardrails only work if every namespace gets them. Platform teams
+        typically create namespaces through a template (a Helm chart, a GitOps
+        "tenant" folder, or tools like Capsule or Kyverno generate rules) that
+        always produces the same bundle:
+      </p>
+      <pre><code>tenants/team-a/
+  namespace.yaml        # labels: team=a, pod-security enforce=restricted
+  rbac.yaml             # RoleBinding: group team-a -&gt; ClusterRole "edit"
+  quota.yaml            # ResourceQuota: cpu, memory, pods, PVC storage
+  limitrange.yaml       # default requests/limits per container
+  netpol-default.yaml   # default-deny + allow DNS + allow from ingress ns</code></pre>
+      <p>
+        Binding the built-in <code>edit</code> ClusterRole with a
+        <b>RoleBinding</b> (not a ClusterRoleBinding) gives the team edit rights
+        only inside that namespace.
+      </p>
+
+      <h4>3. Priority classes: who wins when the cluster is full</h4>
+      <pre><code>apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: business-critical
+value: 100000
+description: "Customer-facing services"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: batch-low
+value: 1000
+preemptionPolicy: Never      # never kicks out other pods</code></pre>
+      <p>
+        When a high-priority pod can't be scheduled, the scheduler may
+        <b>preempt</b> (evict) lower-priority pods to make room. Restrict who can
+        use high priority classes – otherwise every team marks everything
+        critical. A ResourceQuota with a <code>scopeSelector</code> on
+        <code>priorityClassName</code> can limit that.
+      </p>
+
+      <h4>4. Soft vs hard multi-tenancy</h4>
+      <p>
+        All namespaces still share one control plane, one API server, one set
+        of CRDs (cluster-scoped – teams can't each have a different version of
+        an operator), and the same node kernels. That is fine for teams of the
+        same company. For <b>untrusted</b> tenants (customers running their own
+        code), add stronger isolation:
+      </p>
+      <ul>
+        <li><b>Separate clusters</b> per tenant – strongest, most expensive.</li>
+        <li>
+          <b>Virtual clusters</b> (vCluster) – each tenant gets its own API
+          server and CRDs running inside a namespace of the host cluster.
+        </li>
+        <li>
+          <b>Sandboxed runtimes</b> (gVisor, Kata Containers) via
+          RuntimeClass, so a kernel exploit doesn't reach the host.
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A 24-CPU cluster shared by teams A and B, each with a quota of
+          <code>requests.cpu: 10</code>. Team B runs a load test and scales to
+          50 replicas of 500m each (25 CPU). What happens:
+        </p>
+        <ul>
+          <li>
+            The first 20 pods are admitted (20 × 0.5 = 10 CPU). Pod 21 is
+            rejected by the quota: the ReplicaSet events say
+            <code>exceeded quota: team-b-quota, requested: requests.cpu=500m,
+            used: requests.cpu=10, limited: requests.cpu=10</code>.
+          </li>
+          <li>
+            Team A's services still have their 10 CPU available and are not
+            affected.
+          </li>
+          <li>
+            Without the quota: team B's pods would fill the cluster, team A's
+            next rollout would leave new pods Pending, and the autoscaler would
+            add nodes that the platform team pays for.
+          </li>
+        </ul>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Using ClusterRoleBindings for team access – that grants the role in
+            <i>all</i> namespaces.
+          </li>
+          <li>
+            NetworkPolicies on some namespaces only, or a CNI that ignores them.
+          </li>
+          <li>
+            Quota without LimitRange: pods without requests are rejected and
+            teams get confusing errors.
+          </li>
+          <li>
+            Letting tenants create cluster-scoped resources (CRDs, webhooks,
+            ClusterRoles) – one tenant's broken webhook can block everyone.
+          </li>
+          <li>Treating namespaces as a hard security boundary for untrusted code.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          List the failure modes (access, capacity, network, privileges,
+          priority) and the guardrail for each, and say they are applied by a
+          namespace template through GitOps so no namespace is forgotten. Close
+          with soft vs hard multi-tenancy. Follow-ups: how does preemption
+          work, how do you handle CRDs that different teams need, when would you
+          choose vCluster or separate clusters.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q47">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q48">
+      <h3>Q48. ResourceQuota vs LimitRange?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          ResourceQuota caps the <b>total</b> a namespace may consume (sum of CPU
+          and memory requests/limits, number of pods, PVC storage, object
+          counts). LimitRange works <b>per container/pod/PVC</b>: it fills in
+          default requests/limits and enforces min/max values. They are used
+          together, because a quota on CPU/memory makes requests mandatory and
+          the LimitRange supplies them.
+        </p>
+      </div>
+
+      <h4>1. ResourceQuota: a budget for the namespace</h4>
+      <p>
+        The ResourceQuota admission controller keeps a running total of what is
+        used in the namespace. Every create request is checked: if adding the
+        new object would exceed a <code>hard</code> value, the request is
+        rejected with <code>403 Forbidden: exceeded quota</code>.
+      </p>
+      <pre><code>apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-a-quota
+  namespace: team-a
+spec:
+  hard:
+    requests.cpu: "8"            # sum of CPU requests of all pods
+    requests.memory: 16Gi
+    limits.memory: 24Gi
+    pods: "40"
+    requests.storage: 500Gi      # sum of PVC requests
+    persistentvolumeclaims: "20"
+    services.loadbalancers: "2"  # each one costs money
+    count/deployments.apps: "30" # object count for any resource</code></pre>
+      <p>
+        Important rule: once a quota tracks <code>requests.cpu</code> (or
+        memory, or limits), <b>every new pod must specify that value</b>,
+        otherwise it is rejected – the quota can't count something that is not
+        declared.
+      </p>
+
+      <h4>2. LimitRange: rules and defaults per object</h4>
+      <pre><code>apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-defaults
+  namespace: team-a
+spec:
+  limits:
+    - type: Container
+      defaultRequest:            # used when a container sets no request
+        cpu: 100m
+        memory: 128Mi
+      default:                   # used when a container sets no limit
+        memory: 256Mi
+      max:                       # anything bigger is rejected
+        cpu: "2"
+        memory: 4Gi
+      min:
+        memory: 64Mi
+    - type: PersistentVolumeClaim
+      max:
+        storage: 50Gi</code></pre>
+      <p>
+        The LimitRanger admission plugin <b>mutates</b> new pods (injects the
+        defaults) and <b>validates</b> them against min/max. It only acts at
+        creation time; existing pods are not changed when you edit the
+        LimitRange.
+      </p>
+
+      <h4>3. How they work together, in order</h4>
+      <pre><code>kubectl apply (Deployment)
+  └─ ReplicaSet controller creates Pod
+       └─ API server admission:
+            1. LimitRanger: container has no requests?
+                 -&gt; inject defaultRequest 100m / 128Mi, default limit 256Mi
+               exceeds max 2 CPU? -&gt; reject
+            2. ResourceQuota: used + new pod &gt; hard?
+                 -&gt; reject "exceeded quota"
+            3. stored in etcd -&gt; scheduled</code></pre>
+      <table>
+        <thead>
+          <tr><th></th><th>ResourceQuota</th><th>LimitRange</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Scope</td>
+            <td>Whole namespace (sum)</td>
+            <td>Each container / pod / PVC</td>
+          </tr>
+          <tr>
+            <td>Sets defaults?</td>
+            <td>No</td>
+            <td>Yes (<code>default</code>, <code>defaultRequest</code>)</td>
+          </tr>
+          <tr>
+            <td>Typical question it answers</td>
+            <td>"Team A may use at most 8 CPUs in total."</td>
+            <td>"No single container may ask for more than 2 CPUs; unspecified means 100m."</td>
+          </tr>
+          <tr>
+            <td>Counts objects?</td>
+            <td>Yes (pods, services, PVCs, any <code>count/...</code>)</td>
+            <td>No</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>4. Useful commands</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl describe resourcequota -n team-a</code></td>
+            <td>Shows <b>Used</b> vs <b>Hard</b> for every tracked resource.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe limitrange -n team-a</code></td>
+            <td>Shows defaults, min and max per type.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe rs &lt;replicaset&gt; -n team-a</code></td>
+            <td>
+              The place where quota rejections appear as
+              <code>FailedCreate</code> events – not on the Deployment.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl get pod p -o yaml | grep -A6 resources</code></td>
+            <td>Shows the requests/limits the LimitRange injected.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Quota <code>requests.cpu: "4"</code>, no LimitRange. A developer
+          deploys a chart whose containers have no resources section.
+          <code>kubectl get deploy</code> shows <code>0/3 READY</code>, and
+          <code>kubectl get pods</code> shows nothing at all. The answer is in the
+          ReplicaSet:
+        </p>
+        <pre><code>Warning  FailedCreate  replicaset-controller  Error creating: pods "web-7d9c-x2" is
+forbidden: failed quota: team-a-quota: must specify requests.cpu</code></pre>
+        <p>
+          Adding the LimitRange above fixes it without changing the chart: each
+          container gets 100m CPU injected. Three replicas use 300m of the 4 CPU
+          budget. Later the team scales to 50 replicas: 40 pods are created
+          (4000m / 100m), the remaining 10 fail with
+          <code>exceeded quota</code>.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Looking for quota errors on the Deployment or in
+            <code>kubectl get pods</code> – they are on the ReplicaSet events.
+          </li>
+          <li>
+            A LimitRange with only <code>default</code> (limit) and no
+            <code>defaultRequest</code>: the request then defaults to the limit,
+            which can make every pod reserve far more than it uses.
+          </li>
+          <li>
+            Expecting a changed LimitRange to update running pods – it applies
+            only at creation.
+          </li>
+          <li>
+            Quotas tighter than what a rolling update needs: with
+            <code>maxSurge</code>, old and new pods exist at the same time and
+            both count against the quota, so the rollout gets stuck.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "ResourceQuota is the namespace budget – totals and object counts.
+          LimitRange is per container – defaults plus min/max. A CPU or memory
+          quota makes requests mandatory, so we always pair it with a
+          LimitRange that injects defaults. Quota failures show up as
+          FailedCreate on the ReplicaSet." Follow-ups: what happens during a
+          rolling update near the quota (surge pods count), quota scopes by
+          priority class, how this fits multi-tenancy (<a href="#q47">Q47</a>).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q48">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q49">
+      <h3>Q49. How does DNS (CoreDNS) work, and why might lookups be slow?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          CoreDNS runs as a Deployment in <code>kube-system</code> behind the
+          <code>kube-dns</code> Service; it answers names like
+          <code>my-svc.my-ns.svc.cluster.local</code> from the Kubernetes API and
+          forwards everything else upstream. Pods get a
+          <code>resolv.conf</code> with search domains and
+          <code>ndots:5</code>, which makes most external names go through
+          several failing lookups first – the main cause of extra DNS load and
+          latency, along with UDP conntrack races and too few CoreDNS replicas.
+        </p>
+      </div>
+
+      <h4>1. The pieces</h4>
+      <ul>
+        <li>
+          <b>CoreDNS</b> pods (usually 2+) watch Services and EndpointSlices
+          through the API and keep the records in memory.
+        </li>
+        <li>
+          The <b><code>kube-dns</code> Service</b> in <code>kube-system</code>
+          has a fixed ClusterIP (often <code>10.96.0.10</code>).
+        </li>
+        <li>
+          The <b>kubelet</b> writes each pod's <code>/etc/resolv.conf</code>
+          pointing at that IP:
+        </li>
+      </ul>
+      <pre><code># /etc/resolv.conf inside a pod in namespace "shop"
+nameserver 10.96.0.10
+search shop.svc.cluster.local svc.cluster.local cluster.local
+options ndots:5</code></pre>
+      <p>Records CoreDNS serves:</p>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Answer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>orders.shop.svc.cluster.local</code> (normal Service)</td>
+            <td>A record with the Service's ClusterIP</td>
+          </tr>
+          <tr>
+            <td><code>db.shop.svc.cluster.local</code> (headless Service)</td>
+            <td>A records of all ready pod IPs</td>
+          </tr>
+          <tr>
+            <td><code>db-0.db.shop.svc.cluster.local</code> (StatefulSet pod)</td>
+            <td>That pod's IP (<a href="k8s-study-3-advanced.html#q27">Q27</a>)</td>
+          </tr>
+          <tr>
+            <td><code>_http._tcp.orders.shop.svc.cluster.local</code></td>
+            <td>SRV record with the named port</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>2. The Corefile</h4>
+      <p>CoreDNS is configured by the <code>coredns</code> ConfigMap:</p>
+      <pre><code>.:53 {
+    errors
+    health
+    ready
+    kubernetes cluster.local in-addr.arpa ip6.arpa {   # answer cluster names
+        pods insecure
+        fallthrough in-addr.arpa ip6.arpa
+    }
+    prometheus :9153                                  # metrics
+    forward . /etc/resolv.conf                        # everything else upstream
+    cache 30                                          # cache answers 30s
+    loop
+    reload
+    loadbalance
+}
+corp.example.com:53 {                                 # added: stub domain
+    forward . 10.0.0.53 10.0.0.54                     # corporate DNS servers
+}</code></pre>
+      <p>
+        <code>kubectl -n kube-system edit configmap coredns</code>; the
+        <code>reload</code> plugin picks up changes automatically after a short
+        delay. Adding a block like <code>corp.example.com</code> is how pods
+        resolve internal company names.
+      </p>
+
+      <h4>3. Why lookups get slow: ndots and the search list</h4>
+      <p>
+        <code>ndots:5</code> means: "if the name has fewer than 5 dots, try it
+        with each search domain appended <i>before</i> trying it as-is". This is
+        what lets <code>orders</code> resolve to
+        <code>orders.shop.svc.cluster.local</code>. But it also applies to
+        external names:
+      </p>
+      <pre><code>lookup "api.stripe.com"  (2 dots &lt; 5)
+  1. api.stripe.com.shop.svc.cluster.local   -&gt; NXDOMAIN
+  2. api.stripe.com.svc.cluster.local        -&gt; NXDOMAIN
+  3. api.stripe.com.cluster.local            -&gt; NXDOMAIN
+  4. api.stripe.com.                          -&gt; answer
+  x 2  (A and AAAA queries for each)
+= 8 queries, 6 of them wasted, for one connection</code></pre>
+      <p>
+        On cloud nodes the host may add more search domains (e.g. a cloud
+        internal domain), making it worse. Multiply by thousands of requests per
+        second and CoreDNS becomes a bottleneck.
+      </p>
+
+      <h4>4. The 5-second timeouts and other causes</h4>
+      <ul>
+        <li>
+          <b>conntrack race:</b> glibc sends the A and AAAA queries in parallel
+          from the same UDP socket. Under load, a race in the kernel's
+          connection tracking (when queries are DNATed to the CoreDNS
+          ClusterIP) can drop one packet. The resolver then waits its full
+          timeout – <b>5 seconds</b> – before retrying. Symptom: occasional
+          requests taking exactly 5 s longer.
+        </li>
+        <li>
+          <b>Too few CoreDNS replicas</b> or CPU-limited CoreDNS pods.
+        </li>
+        <li>
+          <b>Slow upstream</b> DNS for external names.
+        </li>
+        <li>
+          <b>Egress NetworkPolicy</b> that forgot port 53, so lookups time out
+          instead of failing fast (<a href="k8s-study-2-networking.html#q26">Q26</a>).
+        </li>
+      </ul>
+      <p>Fixes:</p>
+      <table>
+        <thead>
+          <tr><th>Fix</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Trailing dot: <code>api.stripe.com.</code></td>
+            <td>Marks the name as fully qualified – search domains are skipped, 1 lookup.</td>
+          </tr>
+          <tr>
+            <td><code>dnsConfig: options: [{name: ndots, value: "2"}]</code></td>
+            <td>
+              Per pod: names with 2+ dots are tried as-is first. Short names like
+              <code>orders</code> still work.
+            </td>
+          </tr>
+          <tr>
+            <td><b>NodeLocal DNSCache</b></td>
+            <td>
+              A DNS cache DaemonSet on every node, on a link-local IP; pods query
+              it locally, avoiding the conntrack race and most network hops.
+            </td>
+          </tr>
+          <tr>
+            <td>Scale CoreDNS (more replicas, autoscaler)</td>
+            <td>More capacity; spread replicas across nodes and zones.</td>
+          </tr>
+          <tr>
+            <td>App-side caching / connection reuse</td>
+            <td>Fewer lookups in the first place.</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code># per-pod DNS tuning
+spec:
+  dnsConfig:
+    options:
+      - name: ndots
+        value: "2"
+      - name: single-request-reopen   # glibc: separate sockets for A/AAAA</code></pre>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A payment service calls <code>api.stripe.com</code> 2,000 times per
+          second without connection reuse. CoreDNS dashboards show 16,000
+          queries/s, 75% of them NXDOMAIN, and 2 CoreDNS pods at their CPU
+          limit; p99 latency of the service has occasional 5-second spikes.
+        </p>
+        <ol>
+          <li>Debug from a pod:
+            <pre><code>kubectl run dnsutils --rm -it --image=registry.k8s.io/e2e-test-images/agnhost:2.39 -- sh
+nslookup -debug api.stripe.com    # shows each search-domain attempt</code></pre>
+          </li>
+          <li>
+            Set <code>ndots: 2</code> on the payment Deployment → 2 queries per
+            lookup instead of 8: about 4,000 queries/s.
+          </li>
+          <li>
+            Enable connection keep-alive in the HTTP client → lookups drop by
+            another order of magnitude.
+          </li>
+          <li>
+            Deploy NodeLocal DNSCache → the 5-second spikes disappear.
+          </li>
+        </ol>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Lowering <code>ndots</code> cluster-wide and breaking apps that rely
+            on short names like <code>orders.shop</code> (one dot) resolving via
+            search domains – test first.
+          </li>
+          <li>
+            <code>dnsPolicy</code> confusion: <code>ClusterFirst</code> is the
+            default; <code>Default</code> actually means "use the node's DNS" (no
+            cluster names); pods with <code>hostNetwork: true</code> need
+            <code>ClusterFirstWithHostNet</code> to resolve Services.
+          </li>
+          <li>
+            Single CoreDNS replica, or replicas on one node – a node failure
+            breaks DNS for the whole cluster.
+          </li>
+          <li>
+            Debugging DNS from an image without tools – use a debug image or
+            <code>kubectl debug</code> (<a href="k8s-study-2-networking.html#q16">Q16</a>).
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "CoreDNS watches Services through the API and serves
+          <code>svc.ns.svc.cluster.local</code>; pods point at the kube-dns
+          ClusterIP with search domains and <code>ndots:5</code>. That ndots
+          setting makes external names try every search domain first – several
+          NXDOMAINs times A and AAAA – and under load the UDP conntrack race
+          causes 5-second timeouts. Fixes: FQDNs with a trailing dot, lower
+          ndots per workload, NodeLocal DNSCache, scale CoreDNS." Follow-ups: how
+          to add a corporate DNS zone (stub domain in the Corefile), what a
+          headless Service returns, dnsPolicy options.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q49">&uarr; Short interview answer</a></p>
+    </section>
+    <p class="pager"><a href="k8s-study-3-advanced.html">&larr; Part 3: Advanced Workloads and Extensibility</a> · <a href="k8s-study.html">Contents</a> · <a href="k8s-study-5-scenarios.html">Part 5: Production Scenarios &rarr;</a></p>
+
+    <p class="src">
+      <b>Further reading:</b>
+      <a href="https://kubernetes.io/docs/home/">Kubernetes documentation</a>
+      ·
+      <a href="https://kubernetes.io/docs/reference/kubectl/">kubectl reference</a>
+      ·
+      <a href="https://gateway-api.sigs.k8s.io/">Gateway API</a>
+      ·
+      <a href="https://kubernetes.io/blog/">Kubernetes blog</a>
+    </p>
+  </body>
+</html>

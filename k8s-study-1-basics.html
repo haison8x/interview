@@ -1,0 +1,2096 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>K8s Study Guide 1/5 – Basics</title>
+    <style>
+      :root {
+        --fg: #222;
+        --bg: #fff;
+        --muted: #555;
+        --link: #0b5cad;
+        --code-bg: #f3f3f3;
+        --pre-bg: #f5f5f5;
+        --rule: #ddd;
+        --tldr: #0b5cad;
+        --tldr-bg: #eef4fb;
+        --ex: #2e7d32;
+        --ex-bg: #eef7ee;
+        --warn: #b26a00;
+        --warn-bg: #fdf5e6;
+        --tip: #6a3fa0;
+        --tip-bg: #f4eefa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #ddd;
+          --bg: #1b1b1b;
+          --muted: #aaa;
+          --link: #6db3ff;
+          --code-bg: #2a2a2a;
+          --pre-bg: #2a2a2a;
+          --rule: #444;
+          --tldr: #6db3ff;
+          --tldr-bg: #1f2a36;
+          --ex: #7fcf85;
+          --ex-bg: #1f2c20;
+          --warn: #f0b45a;
+          --warn-bg: #33291a;
+          --tip: #c3a0f0;
+          --tip-bg: #2a2236;
+        }
+      }
+      body {
+        font-family:
+          Segoe UI,
+          system-ui,
+          sans-serif;
+        line-height: 1.65;
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 24px 16px 80px;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      a {
+        color: var(--link);
+      }
+      h1 {
+        font-size: 1.6em;
+      }
+      h2 {
+        margin-top: 2.6em;
+        border-bottom: 2px solid var(--rule);
+        padding-bottom: 4px;
+      }
+      section.q {
+        margin-top: 2.4em;
+        padding-top: 0.6em;
+        border-top: 1px solid var(--rule);
+      }
+      section.q h3 {
+        margin: 0.2em 0 0.6em;
+        font-size: 1.25em;
+      }
+      section.q h4 {
+        margin: 1.6em 0 0.4em;
+        font-size: 1.05em;
+      }
+      code {
+        font-family: Consolas, monospace;
+        background: var(--code-bg);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 0.92em;
+      }
+      pre {
+        background: var(--pre-bg);
+        padding: 12px;
+        overflow-x: auto;
+        border-radius: 4px;
+        line-height: 1.45;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0.8em 0;
+        font-size: 0.95em;
+        display: block;
+        overflow-x: auto;
+      }
+      th,
+      td {
+        border: 1px solid var(--rule);
+        padding: 6px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--pre-bg);
+      }
+      .tldr,
+      .example,
+      .pitfall,
+      .interview {
+        border-left: 4px solid;
+        border-radius: 4px;
+        padding: 8px 14px;
+        margin: 1em 0;
+      }
+      .tldr {
+        border-color: var(--tldr);
+        background: var(--tldr-bg);
+      }
+      .example {
+        border-color: var(--ex);
+        background: var(--ex-bg);
+      }
+      .pitfall {
+        border-color: var(--warn);
+        background: var(--warn-bg);
+      }
+      .interview {
+        border-color: var(--tip);
+        background: var(--tip-bg);
+      }
+      .label {
+        font-weight: 700;
+        margin: 0.2em 0 0.4em;
+      }
+      .tldr .label {
+        color: var(--tldr);
+      }
+      .example .label {
+        color: var(--ex);
+      }
+      .pitfall .label {
+        color: var(--warn);
+      }
+      .interview .label {
+        color: var(--tip);
+      }
+      .example pre,
+      .pitfall pre {
+        background: var(--bg);
+      }
+      .ref {
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+      .intro {
+        color: var(--muted);
+      }
+      nav ol {
+        padding-left: 20px;
+      }
+      nav li {
+        margin: 2px 0;
+      }
+      nav a {
+        text-decoration: none;
+      }
+      nav details {
+        margin: 4px 0;
+      }
+      nav summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .back {
+        display: inline-block;
+        margin-bottom: 8px;
+        text-decoration: none;
+        font-size: 0.95em;
+      }
+      .back:hover {
+        text-decoration: underline;
+      }
+      .src {
+        margin-top: 3em;
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+      .pager {
+        margin: 2.4em 0 0;
+        padding-top: 1em;
+        border-top: 1px solid var(--rule);
+      }
+      .pager a {
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back" href="k8s-study.html">&larr; Study guide contents</a>
+    <h1>Kubernetes Study Guide – Part 1: Basics</h1>
+    <p class="intro">Questions 1–11 of 60, explained in depth. Short interview answers are on the <a href="k8s.html">Kubernetes interview page</a>.</p>
+    <nav>
+      <ol>
+        <li value="1"><a href="#q1">What are the components of a Kubernetes cluster?</a></li>
+        <li value="2"><a href="#q2">What happens, end to end, when you run kubectl apply on a Deployment?</a></li>
+        <li value="3"><a href="#q3">What is a Pod, and why does Kubernetes schedule pods, not containers?</a></li>
+        <li value="4"><a href="#q4">What is kubectl, and which commands do you use daily?</a></li>
+        <li value="5"><a href="#q5">What is a Deployment?</a></li>
+        <li value="6"><a href="#q6">What is a Service, and why is it needed?</a></li>
+        <li value="7"><a href="#q7">What Service types are there?</a></li>
+        <li value="8"><a href="#q8">ConfigMap vs Secret – and are Secrets actually secret?</a></li>
+        <li value="9"><a href="#q9">What are Namespaces?</a></li>
+        <li value="10"><a href="#q10">What are labels and selectors?</a></li>
+        <li value="11"><a href="#q11">Explain PV, PVC and StorageClass. Why is my pod Pending on a volume?</a></li>
+      </ol>
+    </nav>
+    <!-- ================================================================ -->
+
+    <section class="q" id="q1">
+      <h3>Q1. What are the components of a Kubernetes cluster?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A cluster has a <b>control plane</b> (kube-apiserver, etcd,
+          kube-scheduler, kube-controller-manager, optionally
+          cloud-controller-manager) that stores and decides the desired state,
+          and <b>worker nodes</b> (kubelet, a container runtime, kube-proxy and
+          a CNI plugin) that actually run the containers. Every component talks
+          only to the API server, and each one runs a reconciliation loop that
+          moves actual state towards desired state.
+        </p>
+      </div>
+
+      <h4>1. The big picture</h4>
+      <p>
+        Think of Kubernetes as a database of "what should be running" plus a
+        set of independent robots that keep reality in line with that database.
+        The database is etcd, the only door into it is the API server, and the
+        robots are controllers, the scheduler and the kubelets.
+      </p>
+      <pre><code>                 +-------------------- control plane --------------------+
+ kubectl  ---&gt;   |  kube-apiserver  &lt;---&gt;  etcd                            |
+ CI / GitOps     |       ^    ^                                             |
+                 |       |    +---- kube-scheduler                          |
+                 |       +--------- kube-controller-manager                 |
+                 |       +--------- cloud-controller-manager (cloud only)   |
+                 +-------^-----------------------------------------------+
+                         | watch / update (HTTPS)
+          +--------------+---------------+
+          |                              |
+   +------ node 1 ------+         +------ node 2 ------+
+   | kubelet            |         | kubelet            |
+   | containerd (CRI)   |         | containerd (CRI)   |
+   | kube-proxy         |         | kube-proxy         |
+   | CNI plugin         |         | CNI plugin         |
+   | [pods...]          |         | [pods...]          |
+   +--------------------+         +--------------------+</code></pre>
+
+      <h4>2. Control plane components</h4>
+      <table>
+        <thead>
+          <tr><th>Component</th><th>What it really does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>kube-apiserver</b></td>
+            <td>
+              Stateless REST front end. Authenticates the caller, authorises
+              (RBAC), runs admission (mutation, validation, policy), validates
+              the schema and writes to etcd. Also serves <i>watches</i> – the
+              streaming change feed every other component depends on. It is
+              the only component that talks to etcd. Scales horizontally behind
+              a load balancer.
+            </td>
+          </tr>
+          <tr>
+            <td><b>etcd</b></td>
+            <td>
+              Distributed, strongly consistent key-value store using the Raft
+              consensus protocol. Holds every object: Deployments, Pods,
+              Secrets, Nodes, leases. Needs a majority (quorum) of members to
+              accept writes, which is why it runs as 3 or 5 members. Lose etcd
+              without a backup and you lose the cluster (see
+              <a href="k8s-study-4-admin.html#q39">Q39</a>).
+            </td>
+          </tr>
+          <tr>
+            <td><b>kube-scheduler</b></td>
+            <td>
+              Watches for pods with no <code>nodeName</code>. For each one it
+              <i>filters</i> nodes that can fit it (resources, taints, affinity,
+              volume topology) and <i>scores</i> the rest, then writes a
+              binding. It does not start anything – it only fills in a field.
+            </td>
+          </tr>
+          <tr>
+            <td><b>kube-controller-manager</b></td>
+            <td>
+              One binary running dozens of controllers: Deployment, ReplicaSet,
+              StatefulSet, Job, Node (marks nodes NotReady), EndpointSlice,
+              Namespace (cleans up deleted namespaces), ServiceAccount, garbage
+              collector and more.
+            </td>
+          </tr>
+          <tr>
+            <td><b>cloud-controller-manager</b></td>
+            <td>
+              Cloud-specific controllers: creates cloud load balancers for
+              <code>type: LoadBalancer</code> Services, sets up routes, removes
+              Node objects when the VM is deleted. Absent on bare metal.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The scheduler and the controller-manager run as several replicas for
+        high availability, but only one replica of each is <b>active</b> at a
+        time – they use <b>leader election</b> (a Lease object in the API) so
+        two schedulers never place the same pod twice.
+      </p>
+
+      <h4>3. Node components</h4>
+      <ul>
+        <li>
+          <b>kubelet</b> – the node agent. Watches the API server for pods
+          bound to its node, tells the container runtime to pull images and
+          start containers, mounts volumes, runs probes, and reports pod and
+          node status back. It also sends heartbeats (Lease objects); if they
+          stop, the node becomes NotReady (<a href="k8s-study-5-scenarios.html#q59">Q59</a>).
+        </li>
+        <li>
+          <b>Container runtime</b> – containerd or CRI-O, spoken to over the
+          Container Runtime Interface (CRI). It uses a low-level runtime such as
+          runc to create the namespaces and cgroups. Docker Engine itself is no
+          longer used on nodes (see the <a href="docker.html">Docker page</a>).
+        </li>
+        <li>
+          <b>kube-proxy</b> – programs iptables/IPVS/nftables rules so Service
+          virtual IPs reach pods (<a href="k8s-study-2-networking.html#q13">Q13</a>). Some CNIs (Cilium)
+          replace it with eBPF.
+        </li>
+        <li>
+          <b>CNI plugin</b> – gives each pod an IP and makes pod-to-pod
+          networking work across nodes (Calico, Cilium, cloud VPC CNIs).
+        </li>
+      </ul>
+      <p>
+        Add-ons that almost every cluster runs as ordinary pods: CoreDNS
+        (<a href="k8s-study-4-admin.html#q49">Q49</a>), metrics-server (for <code>kubectl top</code>
+        and HPA), an ingress or gateway controller.
+      </p>
+
+      <h4>4. The reconciliation loop – the key idea</h4>
+      <p>
+        No component tells another what to do. Each one <b>watches</b> the API
+        server, compares the desired state stored there with what it observes,
+        and acts to close the gap – then repeats forever. This is why
+        Kubernetes self-heals: if a pod dies, nobody "handles the event"
+        specially; the ReplicaSet controller simply sees 2 pods where 3 are
+        desired and creates one more.
+      </p>
+      <pre><code>loop:
+  desired = read spec from API server
+  actual  = observe the world
+  if actual != desired:
+      take one step towards desired
+  update status</code></pre>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A Deployment wants 3 replicas. A node crashes, taking one pod with it.
+        </p>
+        <ol>
+          <li>
+            The kubelet on that node stops sending heartbeats; after ~40s the
+            Node controller marks it NotReady and taints it.
+          </li>
+          <li>
+            After the default 300s toleration, the pod on it is marked for
+            deletion. The ReplicaSet controller now counts 2 healthy pods vs 3
+            desired and creates a new Pod object.
+          </li>
+          <li>The scheduler binds the new pod to a healthy node.</li>
+          <li>That node's kubelet starts it; readiness passes; traffic flows.</li>
+        </ol>
+        <p>
+          Four independent loops cooperated without ever calling each other.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Saying "the master node runs the pods" – control-plane nodes are
+            usually tainted so ordinary workloads don't land there.
+          </li>
+          <li>
+            Thinking the scheduler starts containers – it only assigns a node;
+            the kubelet starts them.
+          </li>
+          <li>
+            Running an even number of etcd members (2 or 4) – it adds no fault
+            tolerance; a 4-member cluster still survives only 1 failure.
+          </li>
+          <li>
+            Forgetting that on managed services (EKS, AKS, GKE) you never see
+            or manage the control plane – but you still own the nodes and add-ons.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Name the components in two groups, give each a one-line job, then
+          finish with the unifying idea: "everything goes through the API
+          server, etcd is the source of truth, and every component is a
+          reconciliation loop – that's what makes it self-healing." Likely
+          follow-ups: what happens if etcd is lost, what happens if the API
+          server is down (running pods keep running, but nothing changes), and
+          why etcd needs an odd number of members.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q1">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q2">
+      <h3>
+        Q2. What happens, end to end, when you run <code>kubectl apply</code> on
+        a Deployment?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          kubectl sends the object to the API server, which authenticates,
+          authorises, runs admission and stores it in etcd. Then a chain of
+          controllers reacts: the Deployment controller creates a ReplicaSet,
+          the ReplicaSet controller creates Pods, the scheduler assigns nodes,
+          the kubelets start containers, and once readiness passes the pods are
+          added to Service endpoints. Nobody calls anybody – each step is a
+          watch reacting to the previous step's write.
+        </p>
+      </div>
+
+      <h4>1. On your machine: kubectl</h4>
+      <p>
+        kubectl reads your kubeconfig (cluster URL, credentials, namespace),
+        parses the YAML, and discovers which API group/version serves
+        <code>apps/v1 Deployment</code>. With classic (client-side) apply it
+        computes a three-way merge between your file, the live object and the
+        <code>kubectl.kubernetes.io/last-applied-configuration</code>
+        annotation, then sends a PATCH. With
+        <code>kubectl apply --server-side</code> the API server does the merge
+        and tracks which manager owns which field (<code>managedFields</code>),
+        which avoids conflicts between tools such as kubectl, Helm and an HPA.
+      </p>
+
+      <h4>2. Inside the API server: the request pipeline</h4>
+      <pre><code>HTTPS request
+  -&gt; Authentication      who are you? (client cert, OIDC token, SA token)
+  -&gt; Authorization       may you patch deployments in this namespace? (RBAC)
+  -&gt; Mutating admission  defaults, injected labels/sidecars, webhooks
+  -&gt; Schema validation   is this a valid Deployment?
+  -&gt; Validating admission policies, quotas, Pod Security, webhooks
+  -&gt; Persist to etcd     object gets a new resourceVersion
+  -&gt; Notify watchers     everyone watching Deployments sees the change</code></pre>
+      <p>
+        If any step rejects, kubectl prints the error and nothing is stored. A
+        successful <code>apply</code> only means "the desired state is
+        recorded" – not that anything is running yet.
+      </p>
+
+      <h4>3. The controller chain</h4>
+      <ol>
+        <li>
+          <b>Deployment controller</b> sees the new or changed Deployment. It
+          hashes the pod template and looks for a ReplicaSet with that hash
+          (label <code>pod-template-hash</code>). None exists, so it creates
+          one – or, if the template changed, starts a rolling update between
+          the old and new ReplicaSets (<a href="k8s-study-2-networking.html#q18">Q18</a>).
+        </li>
+        <li>
+          <b>ReplicaSet controller</b> sees a ReplicaSet wanting 3 pods and
+          owning 0, so it creates 3 Pod objects with an
+          <code>ownerReference</code> pointing to the ReplicaSet. The pods have
+          no <code>nodeName</code> – status <code>Pending</code>.
+        </li>
+        <li>
+          <b>Scheduler</b> picks up the unscheduled pods: filter nodes (enough
+          allocatable CPU/memory for the <i>requests</i>, taints tolerated,
+          affinity satisfied, volumes reachable), score the survivors (spread,
+          image locality, balanced utilisation), write a Binding.
+        </li>
+        <li>
+          <b>Kubelet</b> on the chosen node sees a pod bound to it: creates the
+          pod sandbox, calls the CNI plugin to get an IP, mounts volumes
+          (ConfigMaps, Secrets, PVCs), pulls images, runs init containers, then
+          starts app containers.
+        </li>
+        <li>
+          <b>Probes</b> start. When the readiness probe passes, the kubelet
+          marks the pod Ready.
+        </li>
+        <li>
+          <b>EndpointSlice controller</b> adds the ready pod's IP to the slices
+          of every Service whose selector matches; <b>kube-proxy</b> on every
+          node reprograms its rules; traffic starts flowing.
+        </li>
+      </ol>
+
+      <h4>4. Watching it happen</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl apply -f app.yaml --dry-run=server</code></td>
+            <td>
+              Runs the full pipeline (auth, admission, validation) without
+              persisting – catches webhook and quota rejections before you
+              apply for real.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl diff -f app.yaml</code></td>
+            <td>Shows what would change on the live object.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl get deploy,rs,pods -l app=web -w</code></td>
+            <td>Watches the chain: Deployment → ReplicaSet → Pods appear.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl get events --sort-by=.lastTimestamp</code></td>
+            <td>
+              Shows each step's events: ScalingReplicaSet, SuccessfulCreate,
+              Scheduled, Pulling, Pulled, Created, Started.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl rollout status deploy/web</code></td>
+            <td>Blocks until all new replicas are updated and available.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          You apply a Deployment <code>web</code> with 3 replicas. The event
+          stream looks roughly like this (times are typical, not guaranteed):
+        </p>
+        <pre><code>t=0.0s  Deployment web     ScalingReplicaSet  Scaled up replica set web-7c9d to 3
+t=0.1s  ReplicaSet web-7c9d SuccessfulCreate  Created pod web-7c9d-abcde (x3)
+t=0.2s  Pod web-7c9d-abcde  Scheduled         assigned default/web-7c9d-abcde to node-2
+t=0.4s  Pod web-7c9d-abcde  Pulling           image "nginx:1.27"
+t=3.1s  Pod web-7c9d-abcde  Started           container nginx
+t=8.0s  readiness passes -&gt; pod Ready -&gt; added to EndpointSlice of Service web</code></pre>
+        <p>
+          If the pods never appear, the problem is between steps 1 and 2 – look
+          at the <b>ReplicaSet</b> events (quota or admission rejection). If they
+          stay Pending, it is the scheduler (<a href="k8s-study-5-scenarios.html#q54">Q54</a>). If they
+          start but never become Ready, it is the probe (<a href="k8s-study-5-scenarios.html#q56">Q56</a>).
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Treating "apply succeeded" as "deployment succeeded" – in CI, follow
+            <code>apply</code> with <code>kubectl rollout status</code> (with a
+            timeout) or let GitOps report health.
+          </li>
+          <li>
+            Mixing <code>kubectl edit</code>/<code>scale</code> with
+            <code>apply</code>: the next apply can silently revert manual
+            changes, or manual changes conflict with the last-applied annotation.
+          </li>
+          <li>
+            Looking only at the Deployment's events when pods are missing –
+            pod-creation errors are recorded on the ReplicaSet.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Walk the path in order – kubectl, API server pipeline (authn, authz,
+          admission, etcd), Deployment controller, ReplicaSet controller,
+          scheduler, kubelet/CNI/runtime, readiness, EndpointSlices – and end
+          with "no component calls another; they all watch the API server."
+          Follow-ups: where would a mutating webhook inject a sidecar (before
+          etcd), what does the scheduler look at (requests, not usage), and how
+          you'd find which step failed.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q2">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q3">
+      <h3>
+        Q3. What is a Pod, and why does Kubernetes schedule pods, not containers?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A Pod is the smallest deployable unit: one or more containers that
+          share one network namespace (one IP, talk over
+          <code>localhost</code>), can share volumes, and are always placed on
+          the same node and started and stopped together. Kubernetes schedules
+          pods because some processes must be co-located – an app and its proxy
+          or log shipper – and the pod is the unit that guarantees that.
+        </p>
+      </div>
+
+      <h4>1. What the containers in a pod share</h4>
+      <table>
+        <thead>
+          <tr><th>Shared</th><th>Consequence</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Network namespace</td>
+            <td>
+              One IP and one port space for the whole pod. Container A reaches B
+              on <code>localhost:9090</code>; two containers cannot both listen
+              on port 8080.
+            </td>
+          </tr>
+          <tr>
+            <td>Volumes (if mounted)</td>
+            <td>
+              An <code>emptyDir</code> volume lets one container write files the
+              other reads – the basis of log-shipping sidecars.
+            </td>
+          </tr>
+          <tr>
+            <td>Node and lifecycle</td>
+            <td>
+              All containers land on the same node and the pod is deleted as a
+              unit.
+            </td>
+          </tr>
+          <tr>
+            <td>IPC; optionally PIDs</td>
+            <td>
+              With <code>shareProcessNamespace: true</code> containers can see
+              (and signal) each other's processes – useful for debugging.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Each container still has its own filesystem (image), its own resource
+        requests/limits and its own restart counter. Under the hood the runtime
+        creates a tiny "pause" (sandbox) container that holds the network
+        namespace; the app containers join it.
+      </p>
+
+      <h4>2. Why not schedule containers directly?</h4>
+      <p>
+        Because the scheduler would then have to guarantee co-location
+        constraints between containers ("put the Envoy proxy on the same host as
+        the app and give them the same IP"). By making the group the unit, all
+        those guarantees come for free. The pattern is "one main process per
+        container, tightly coupled helpers in the same pod". Loosely coupled
+        services (API and database) belong in <b>separate</b> pods so they can
+        scale and fail independently.
+      </p>
+
+      <h4>3. Pods are ephemeral – and that's by design</h4>
+      <ul>
+        <li>
+          A pod is never "moved". If its node dies or it is evicted, the pod is
+          gone; a controller creates a <i>new</i> pod with a new name and a new
+          IP somewhere else.
+        </li>
+        <li>
+          Containers <i>inside</i> a pod are restarted in place by the kubelet
+          according to <code>restartPolicy</code> (<code>Always</code> by
+          default for Deployments; <code>OnFailure</code>/<code>Never</code> for
+          Jobs). The pod keeps its IP across container restarts.
+        </li>
+        <li>
+          That's why you almost never create bare pods: nobody recreates a bare
+          pod when its node dies. Use a Deployment, StatefulSet, DaemonSet or
+          Job.
+        </li>
+      </ul>
+
+      <h4>4. Pod lifecycle</h4>
+      <pre><code>Pending   -&gt; accepted, but not all containers running (scheduling, image pull, init containers)
+Running   -&gt; bound to a node, at least one container running
+Succeeded -&gt; all containers exited 0 and won't restart (Jobs)
+Failed    -&gt; all containers terminated, at least one with an error
+Unknown   -&gt; node not reporting</code></pre>
+      <p>
+        "CrashLoopBackOff", "ImagePullBackOff" and "Terminating" are not phases;
+        they are container states or reasons shown by
+        <code>kubectl get pods</code>.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          An API container writes logs to files; a Fluent Bit sidecar ships
+          them. Both share an <code>emptyDir</code>, and the API also exposes
+          metrics that the sidecar could scrape on <code>localhost</code>:
+        </p>
+        <pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: api
+  labels:
+    app: api
+spec:
+  containers:
+    - name: api
+      image: my-api:2.1
+      ports:
+        - containerPort: 8080     # whole pod has this port
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log/api
+    - name: log-shipper
+      image: fluent/fluent-bit:3.2
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log/api
+          readOnly: true
+  volumes:
+    - name: logs
+      emptyDir: {}                # lives as long as the pod</code></pre>
+        <p>
+          <code>kubectl get pod api -o wide</code> shows one IP, e.g.
+          <code>10.244.2.17</code>, for both containers;
+          <code>kubectl logs api -c log-shipper</code> reads one container's
+          logs. If the node dies, the pod and the <code>emptyDir</code> are gone
+          – which is why this is a bare pod only for illustration.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Putting the app and its database in one pod "because they talk to
+            each other" – now you can't scale the app without cloning the
+            database.
+          </li>
+          <li>
+            Expecting a pod's IP to be stable – use a Service
+            (<a href="#q6">Q6</a>).
+          </li>
+          <li>
+            Writing important data inside the container filesystem or an
+            <code>emptyDir</code> – it disappears with the pod; use a PVC
+            (<a href="#q11">Q11</a>).
+          </li>
+          <li>
+            Two containers in a pod both binding the same port – the second one
+            crashes with "address already in use".
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A pod is a group of containers sharing a network namespace and
+          volumes, always co-scheduled; it's the unit of scheduling so tightly
+          coupled helpers like sidecars are guaranteed to sit next to the app.
+          Pods are disposable – controllers replace them, they don't heal them."
+          Follow-ups: what is the pause container, what's the difference
+          between a pod restart and a container restart, and when you'd use
+          multiple containers in one pod (<a href="k8s-study-3-advanced.html#q32">Q32</a>).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q3">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q4">
+      <h3>Q4. What is kubectl, and which commands do you use daily?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          kubectl is a client for the Kubernetes REST API: every command becomes
+          HTTP calls to the API server, using the cluster, user and namespace
+          from your kubeconfig's current context. Day to day you use
+          <code>get</code>, <code>describe</code>, <code>logs</code>,
+          <code>exec</code>, <code>apply</code>, <code>rollout</code> and
+          <code>events</code> – and you always check which context you're in
+          before changing anything.
+        </p>
+      </div>
+
+      <h4>1. How kubectl knows where to talk</h4>
+      <p>
+        The kubeconfig file (<code>~/.kube/config</code>, or the
+        <code>KUBECONFIG</code> variable) contains <b>clusters</b> (API URL +
+        CA), <b>users</b> (certificate, token, or an exec plugin such as the
+        cloud CLI that fetches a short-lived token) and <b>contexts</b> that
+        combine a cluster, a user and a default namespace.
+      </p>
+      <pre><code>kubectl config get-contexts             # list contexts, * marks current
+kubectl config use-context prod-eu      # switch cluster
+kubectl config set-context --current --namespace=payments
+kubectl get pods -v=6                   # show the HTTP calls being made</code></pre>
+
+      <h4>2. The daily command set</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl get pods -o wide</code></td>
+            <td>
+              Lists pods with status, restarts, age, pod IP and node. Add
+              <code>-A</code> for all namespaces, <code>-w</code> to watch,
+              <code>-o yaml</code> for the full object.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe pod &lt;pod&gt;</code></td>
+            <td>
+              Human-readable spec + status + <b>Events</b>: scheduling failures,
+              probe failures, image pull errors, OOM kills. First stop for any
+              broken pod.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl logs &lt;pod&gt; -c &lt;c&gt; -f --previous</code></td>
+            <td>
+              Reads container stdout/stderr from the node. <code>--previous</code>
+              shows the crashed instance; <code>-l app=web</code> reads several
+              pods; <code>--since=10m</code> limits output.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl exec -it &lt;pod&gt; -- sh</code></td>
+            <td>
+              Runs a process inside an existing container (needs a shell in the
+              image). For distroless images use <code>kubectl debug</code>
+              (<a href="k8s-study-2-networking.html#q16">Q16</a>).
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl apply -f file.yaml</code></td>
+            <td>
+              Declarative create-or-update: merges your file into the live
+              object. Pair with <code>kubectl diff -f</code> first.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl rollout status|history|undo deploy/x</code></td>
+            <td>Follow, inspect and reverse Deployment rollouts (<a href="k8s-study-2-networking.html#q18">Q18</a>).</td>
+          </tr>
+          <tr>
+            <td><code>kubectl get events --sort-by=.lastTimestamp</code></td>
+            <td>
+              Recent cluster events in time order. Events are kept only for a
+              short time (about an hour by default).
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl port-forward svc/web 8080:80</code></td>
+            <td>
+              Tunnels a local port to a pod/Service through the API server –
+              test an app without exposing it.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl top pods / nodes</code></td>
+            <td>Current CPU/memory usage from metrics-server.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl explain deploy.spec.strategy</code></td>
+            <td>Built-in API documentation for any field.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl auth can-i delete pods --as jane</code></td>
+            <td>Checks RBAC permissions (<a href="k8s-study-2-networking.html#q14">Q14</a>).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Imperative vs declarative</h4>
+      <p>
+        <b>Imperative</b> commands (<code>kubectl create</code>,
+        <code>run</code>, <code>scale</code>, <code>edit</code>,
+        <code>set image</code>) are quick for experiments and emergencies, but
+        leave no record of intent. <b>Declarative</b> management keeps YAML in
+        git and applies it, so the cluster state is reproducible and reviewable.
+        In production, a GitOps agent does the applying (<a href="k8s-study-5-scenarios.html#q60">Q60</a>)
+        and humans mostly use kubectl read-only.
+      </p>
+      <p>
+        Handy trick: generate YAML instead of writing it by hand –
+        <code>kubectl create deployment web --image=nginx --dry-run=client -o yaml &gt; web.yaml</code>.
+      </p>
+
+      <h4>4. Output formatting worth knowing</h4>
+      <pre><code># just the names
+kubectl get pods -o name
+# custom columns
+kubectl get pods -o custom-columns=NAME:.metadata.name,NODE:.spec.nodeName
+# one field with JSONPath
+kubectl get pod web-0 -o jsonpath='{.status.podIP}'
+# which image is every deployment running?
+kubectl get deploy -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'</code></pre>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>A typical "something is wrong with checkout" session:</p>
+        <pre><code>kubectl config current-context                  # prod-eu - good
+kubectl get pods -n shop -l app=checkout        # 1 of 3 pods: CrashLoopBackOff, 7 restarts
+kubectl describe pod checkout-5f7c-x2k9 -n shop # Last State: OOMKilled, exit 137
+kubectl logs checkout-5f7c-x2k9 -n shop --previous | tail -50
+kubectl top pod -n shop -l app=checkout         # others at 480Mi of a 512Mi limit</code></pre>
+        <p>
+          Five read-only commands, and you know it's a memory-limit problem
+          (<a href="k8s-study-5-scenarios.html#q57">Q57</a>) – without touching anything.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Running a destructive command against the wrong context – show the
+            context in your shell prompt, or use separate kubeconfigs per
+            environment.
+          </li>
+          <li>
+            Forgetting <code>-n</code>: <code>kubectl get pods</code> shows only
+            the current namespace, so "the pod doesn't exist".
+          </li>
+          <li>
+            <code>kubectl logs</code> on a restarted container shows the
+            <i>new</i> instance; the crash reason is in <code>--previous</code>.
+          </li>
+          <li>
+            <code>kubectl edit</code> in production – the change is not in git
+            and the next deploy (or GitOps) reverts it.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Explain that kubectl is just an API client configured by kubeconfig
+          contexts, list the handful of commands you use and <i>why</i>
+          (describe for events, logs --previous for crashes, port-forward for
+          testing), and mention that in production you prefer declarative
+          changes through git. Follow-ups: how kubectl authenticates to a
+          managed cluster (exec plugin / short-lived tokens), and the difference
+          between <code>apply</code> and <code>create</code>.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q4">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q5">
+      <h3>Q5. What is a Deployment?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A Deployment is a controller for stateless, interchangeable pods. You
+          declare the pod template and replica count; the Deployment manages
+          <b>ReplicaSets</b>, which keep exactly that many pods alive. Changing
+          the template triggers a rolling update to a new ReplicaSet, and old
+          ReplicaSets are kept so you can roll back.
+        </p>
+      </div>
+
+      <h4>1. Three layers: Deployment → ReplicaSet → Pods</h4>
+      <pre><code>Deployment web            (desired: 3 replicas, image nginx:1.27, strategy)
+  |
+  +-- ReplicaSet web-7c9d6f  (pod-template-hash=7c9d6f, replicas: 3)
+  |     +-- Pod web-7c9d6f-abcde
+  |     +-- Pod web-7c9d6f-fghij
+  |     +-- Pod web-7c9d6f-klmno
+  |
+  +-- ReplicaSet web-5b8f2a  (old template, replicas: 0, kept for rollback)</code></pre>
+      <ul>
+        <li>
+          The <b>ReplicaSet</b> does one thing: keep N pods matching its
+          selector alive. It knows nothing about versions or updates.
+        </li>
+        <li>
+          The <b>Deployment</b> adds versioning on top: every distinct pod
+          template gets its own ReplicaSet (identified by a hash of the
+          template), and the Deployment scales them up and down to move between
+          versions.
+        </li>
+        <li>
+          Pod names are <code>&lt;deployment&gt;-&lt;template-hash&gt;-&lt;random&gt;</code>
+          – random, because the pods are interchangeable.
+        </li>
+      </ul>
+
+      <h4>2. What the Deployment gives you</h4>
+      <table>
+        <thead>
+          <tr><th>Feature</th><th>How it works</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Self-healing</td>
+            <td>A dead or deleted pod is replaced by the ReplicaSet controller.</td>
+          </tr>
+          <tr>
+            <td>Scaling</td>
+            <td>
+              <code>kubectl scale deploy/web --replicas=5</code> or an HPA
+              (<a href="k8s-study-2-networking.html#q15">Q15</a>) changes <code>spec.replicas</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Rolling update</td>
+            <td>
+              Template change → new ReplicaSet scaled up while the old one scales
+              down, paced by <code>maxSurge</code>/<code>maxUnavailable</code>
+              (defaults 25% each) (<a href="k8s-study-2-networking.html#q18">Q18</a>).
+            </td>
+          </tr>
+          <tr>
+            <td>Rollback</td>
+            <td>
+              Old ReplicaSets are kept at 0 replicas
+              (<code>revisionHistoryLimit</code>, default 10);
+              <code>kubectl rollout undo</code> scales one back up.
+            </td>
+          </tr>
+          <tr>
+            <td>Pause / resume</td>
+            <td>
+              <code>kubectl rollout pause</code> lets you batch several changes
+              into one rollout.
+            </td>
+          </tr>
+          <tr>
+            <td>Progress tracking</td>
+            <td>
+              If a rollout makes no progress for
+              <code>progressDeadlineSeconds</code> (default 600), the Deployment
+              reports <code>ProgressDeadlineExceeded</code>
+              (<a href="k8s-study-5-scenarios.html#q52">Q52</a>).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. What triggers a new rollout – and what doesn't</h4>
+      <p>
+        Only changes to <code>spec.template</code> (image, env, resources,
+        labels, annotations on the pod template…) create a new ReplicaSet.
+        Changing <code>replicas</code> just scales the current ReplicaSet.
+        Updating a ConfigMap that the pods <i>reference</i> does
+        <b>not</b> trigger a rollout either – the template didn't change. To
+        roll pods after a config change, use
+        <code>kubectl rollout restart deploy/web</code> (it adds a timestamp
+        annotation to the template) or put a hash of the config in a template
+        annotation (Helm's common <code>checksum/config</code> trick).
+      </p>
+
+      <h4>4. Strategies</h4>
+      <ul>
+        <li>
+          <b>RollingUpdate</b> (default) – gradual replacement, zero downtime if
+          readiness probes are meaningful.
+        </li>
+        <li>
+          <b>Recreate</b> – kill all old pods, then start new ones. Causes
+          downtime, but needed when two versions must never run at once (e.g.
+          an incompatible schema migration) or when a ReadWriteOnce volume can
+          only be attached to one pod (<a href="#q11">Q11</a>).
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <pre><code>kubectl create deployment web --image=nginx:1.26 --replicas=3
+kubectl get rs                    # web-6d4f8 DESIRED 3 CURRENT 3 READY 3
+kubectl set image deploy/web nginx=nginx:1.27
+kubectl get rs                    # web-6d4f8 0/0/0 (old), web-8c2a1 3/3/3 (new)
+kubectl delete pod web-8c2a1-xyz  # a new pod appears within seconds
+kubectl rollout undo deploy/web   # web-6d4f8 scaled back to 3, web-8c2a1 to 0</code></pre>
+        <p>
+          Note the rollback didn't rebuild anything – it reused the old
+          ReplicaSet, which is why it takes seconds.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Changing the <code>selector</code> after creation – it's immutable;
+            you must delete and recreate the Deployment.
+          </li>
+          <li>
+            Selector that also matches pods from another Deployment – the two
+            controllers fight over the pods. Keep labels unique per app.
+          </li>
+          <li>
+            Running a database in a Deployment with a shared PVC – use a
+            StatefulSet (<a href="k8s-study-3-advanced.html#q27">Q27</a>).
+          </li>
+          <li>
+            Setting <code>replicas</code> in git <i>and</i> using an HPA – every
+            apply resets the replica count. Omit <code>replicas</code> when an
+            HPA owns it.
+          </li>
+          <li>
+            Editing the ReplicaSet directly – the Deployment controller
+            overwrites it.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A Deployment manages ReplicaSets, which manage pods. Each pod
+          template version gets its own ReplicaSet; a rollout scales the new one
+          up and the old one down, and rollback scales an old one back up." Then
+          mention self-healing, scaling, strategies. Follow-ups: why doesn't a
+          ConfigMap change restart pods, Deployment vs StatefulSet, and what
+          <code>maxSurge</code>/<code>maxUnavailable</code> do.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q5">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q6">
+      <h3>Q6. What is a Service, and why is it needed?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Pods are ephemeral and their IPs change every time they are
+          recreated, so clients can't use pod IPs. A Service selects a set of
+          pods by label and gives them one stable virtual IP and DNS name; it
+          load-balances connections across the pods that are currently
+          <b>Ready</b>. It's the stable address in front of a moving target.
+        </p>
+      </div>
+
+      <h4>1. The problem it solves</h4>
+      <p>
+        A Deployment with 3 replicas has 3 pod IPs today. Tomorrow a rollout
+        replaces all three; a node failure replaces one; the HPA adds two more.
+        If the frontend hard-coded pod IPs it would break constantly. A Service
+        decouples "who I want to talk to" (all pods with <code>app=orders</code>)
+        from "where they are right now".
+      </p>
+
+      <h4>2. The moving parts</h4>
+      <ol>
+        <li>
+          You create a Service with a <b>selector</b>. It gets a
+          <b>ClusterIP</b> from the service CIDR (e.g.
+          <code>10.96.14.20</code>) that never changes for the Service's
+          lifetime, and a DNS name
+          <code>orders.shop.svc.cluster.local</code> served by CoreDNS.
+        </li>
+        <li>
+          The <b>EndpointSlice controller</b> continuously lists pods matching
+          the selector and writes their IPs into EndpointSlice objects –
+          <b>only ready pods</b> count as serving endpoints.
+        </li>
+        <li>
+          <b>kube-proxy</b> on every node watches Services and EndpointSlices
+          and programs kernel rules: "packets to 10.96.14.20:80 → pick one of
+          10.244.1.5:8080, 10.244.2.9:8080, 10.244.3.4:8080"
+          (details in <a href="k8s-study-2-networking.html#q13">Q13</a>).
+        </li>
+      </ol>
+      <pre><code>client pod --&gt; orders.shop.svc.cluster.local
+                 | CoreDNS
+                 v
+             10.96.14.20:80   (virtual, nothing listens here)
+                 | kube-proxy rules (DNAT)
+     +-----------+-----------+
+     v           v           v
+ 10.244.1.5  10.244.2.9  10.244.3.4   :8080   (ready pods only)</code></pre>
+
+      <h4>3. port, targetPort, and named ports</h4>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>port</code></td>
+            <td>The port clients use on the Service IP/name.</td>
+          </tr>
+          <tr>
+            <td><code>targetPort</code></td>
+            <td>
+              The port the container actually listens on. Can be a number or a
+              <b>name</b> of a container port – with a name, different pods (or
+              versions) can listen on different numbers.
+            </td>
+          </tr>
+          <tr>
+            <td><code>nodePort</code></td>
+            <td>Only for NodePort/LoadBalancer types (<a href="#q7">Q7</a>).</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  namespace: shop
+spec:
+  selector:
+    app: orders              # must match pod labels exactly
+  ports:
+    - name: http
+      port: 80               # clients call orders:80
+      targetPort: http       # named port in the pod spec
+---
+# in the Deployment's pod template:
+#   ports:
+#     - name: http
+#       containerPort: 8080</code></pre>
+
+      <h4>4. How clients find it</h4>
+      <ul>
+        <li>
+          <b>DNS</b> (preferred): <code>orders</code> from the same namespace,
+          <code>orders.shop</code> from another, or the full
+          <code>orders.shop.svc.cluster.local</code>.
+        </li>
+        <li>
+          <b>Environment variables</b> like <code>ORDERS_SERVICE_HOST</code>
+          are injected into pods – but only for Services that existed when the
+          pod started, so don't rely on them.
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <pre><code>kubectl get svc orders -n shop
+# NAME     TYPE        CLUSTER-IP    PORT(S)
+# orders   ClusterIP   10.96.14.20   80/TCP
+
+kubectl get endpointslices -n shop -l kubernetes.io/service-name=orders
+# ADDRESSTYPE  PORTS  ENDPOINTS
+# IPv4         8080   10.244.1.5,10.244.2.9,10.244.3.4
+
+kubectl run tmp -n shop --rm -it --image=busybox -- wget -qO- http://orders/health</code></pre>
+        <p>
+          Now break one pod's readiness probe: within seconds it disappears from
+          the EndpointSlice, and the Service sends traffic only to the other
+          two. Delete a pod: its replacement appears with a new IP and is added
+          automatically. The client never noticed.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Selector typo (<code>app: order</code> vs <code>app: orders</code>)
+            → Service with <b>no endpoints</b> → "connection refused". Always
+            check the EndpointSlices first.
+          </li>
+          <li>
+            <code>targetPort</code> doesn't match the port the app listens on,
+            or the app listens on <code>127.0.0.1</code> instead of
+            <code>0.0.0.0</code>.
+          </li>
+          <li>
+            Pinging a ClusterIP to test it – ICMP usually doesn't work because
+            the IP is virtual; test the TCP port instead.
+          </li>
+          <li>
+            Expecting per-request load balancing for long-lived connections
+            (gRPC, HTTP/2) – Services balance per connection.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Pods are disposable and change IPs; a Service gives a label-selected
+          group of pods a stable virtual IP and DNS name, and only routes to
+          ready pods. EndpointSlices track the pod IPs, kube-proxy programs the
+          routing." Follow-ups: what happens when a pod fails readiness, how
+          DNS names are built, why a Service might have no endpoints, and the
+          Service types (<a href="#q7">Q7</a>).
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q6">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q7">
+      <h3>Q7. What Service types are there?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          <b>ClusterIP</b> (internal only, the default), <b>NodePort</b> (a
+          port on every node), <b>LoadBalancer</b> (a cloud load balancer in
+          front of the NodePorts), <b>ExternalName</b> (a DNS alias to an
+          outside host) and the <b>headless</b> variant
+          (<code>clusterIP: None</code>, DNS returns pod IPs directly). The
+          first three build on each other.
+        </p>
+      </div>
+
+      <h4>1. They are layered</h4>
+      <pre><code>LoadBalancer = NodePort + an external cloud load balancer pointing at the node ports
+NodePort     = ClusterIP + the same port opened on every node
+ClusterIP    = virtual IP + DNS name inside the cluster</code></pre>
+      <p>
+        So a LoadBalancer Service also has a ClusterIP and (by default) a
+        nodePort – which is useful to know when debugging.
+      </p>
+
+      <h4>2. Each type in detail</h4>
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Reachable from</th><th>Typical use</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>ClusterIP</b></td>
+            <td>Inside the cluster only.</td>
+            <td>
+              Service-to-service traffic: frontend → orders → payments. The vast
+              majority of Services.
+            </td>
+          </tr>
+          <tr>
+            <td><b>NodePort</b></td>
+            <td>
+              <code>&lt;any-node-IP&gt;:&lt;30000–32767&gt;</code>
+            </td>
+            <td>
+              Bare-metal setups, an external load balancer you manage yourself,
+              quick tests. Ugly ports, and clients need to know node IPs.
+            </td>
+          </tr>
+          <tr>
+            <td><b>LoadBalancer</b></td>
+            <td>A public or internal cloud LB IP/hostname.</td>
+            <td>
+              Exposing one entry point – typically the ingress/gateway
+              controller – to the outside. One LB per Service, which costs
+              money, so you don't use it for every app.
+            </td>
+          </tr>
+          <tr>
+            <td><b>ExternalName</b></td>
+            <td>Inside the cluster (it's just DNS).</td>
+            <td>
+              A stable in-cluster name for an external dependency:
+              <code>db</code> → CNAME <code>prod-db.abc.eu-west-1.rds.amazonaws.com</code>.
+              No proxying, no ports, no selector.
+            </td>
+          </tr>
+          <tr>
+            <td><b>Headless</b> (<code>clusterIP: None</code>)</td>
+            <td>Inside the cluster.</td>
+            <td>
+              DNS returns the individual pod IPs (A records) instead of one
+              virtual IP. Used by StatefulSets for per-pod names
+              (<code>db-0.db</code>) and by clients that balance themselves
+              (gRPC, Cassandra drivers).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Important knobs</h4>
+      <ul>
+        <li>
+          <code>externalTrafficPolicy: Local</code> (NodePort/LoadBalancer) –
+          only nodes with a local ready pod receive traffic; preserves the
+          client source IP and avoids an extra hop. The default
+          <code>Cluster</code> spreads evenly but SNATs the source IP.
+        </li>
+        <li>
+          Cloud-specific <b>annotations</b> decide internal vs internet-facing,
+          NLB vs ALB, etc. – read your provider's docs.
+        </li>
+        <li>
+          <code>loadBalancerSourceRanges</code> restricts which client CIDRs
+          may connect.
+        </li>
+        <li>
+          On bare metal, LoadBalancer Services stay
+          <code>&lt;pending&gt;</code> until you install something like MetalLB
+          or Cilium's LB IPAM.
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A typical production layout: 40 ClusterIP Services for internal apps,
+          <b>one</b> LoadBalancer Service for the gateway controller, and HTTP
+          routing by host/path to the 40 apps (<a href="k8s-study-2-networking.html#q19">Q19</a>,
+          <a href="k8s-study-2-networking.html#q20">Q20</a>).
+        </p>
+        <pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: gateway-system
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local   # keep the client IP for logs and allow-lists
+  selector:
+    app: gateway-proxy
+  ports:
+    - name: https
+      port: 443
+      targetPort: 8443</code></pre>
+        <pre><code>kubectl get svc gateway -n gateway-system
+# TYPE          CLUSTER-IP    EXTERNAL-IP     PORT(S)
+# LoadBalancer  10.96.80.11   203.0.113.25    443:31544/TCP
+#                                                  ^ the NodePort underneath</code></pre>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            One LoadBalancer per microservice – expensive and hard to secure;
+            consolidate behind an ingress/gateway.
+          </li>
+          <li>
+            <code>EXTERNAL-IP &lt;pending&gt;</code> forever – no cloud
+            controller or LB implementation, or a quota/permission issue; check
+            the Service events.
+          </li>
+          <li>
+            ExternalName for HTTPS: the client connects with the in-cluster name
+            in the Host header/SNI, which the external server's certificate may
+            not cover.
+          </li>
+          <li>
+            <code>externalTrafficPolicy: Local</code> with pods on only some
+            nodes – the cloud LB health-checks nodes and only sends to those
+            with local pods, so spread replicas well.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          List the types, explain that LoadBalancer ⊃ NodePort ⊃ ClusterIP, and
+          give a use case per type – then add headless and why StatefulSets
+          need it. Bonus points: "in practice we expose one LoadBalancer for the
+          gateway and keep everything else ClusterIP". Follow-ups: how to keep
+          the client IP (<code>externalTrafficPolicy: Local</code>), and what
+          you do on bare metal.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q7">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q8">
+      <h3>Q8. ConfigMap vs Secret – and are Secrets actually secret?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Both decouple configuration from the image and are injected as
+          environment variables or mounted files. ConfigMaps hold non-sensitive
+          settings; Secrets hold credentials. But a Secret is only
+          base64-<i>encoded</i>: real protection comes from encryption at rest
+          in etcd, tight RBAC, and preferably an external secret manager.
+        </p>
+      </div>
+
+      <h4>1. Why they exist</h4>
+      <p>
+        The same image should run in dev, staging and prod – only the
+        configuration differs. Baking config into the image means a rebuild per
+        environment; baking secrets in means anyone who can pull the image has
+        your passwords. ConfigMaps and Secrets are API objects the kubelet
+        delivers to the pod at runtime.
+      </p>
+
+      <h4>2. Two ways to consume them</h4>
+      <pre><code>spec:
+  containers:
+    - name: api
+      image: my-api:2.1
+      env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef: { name: api-config, key: DATABASE_HOST }
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef: { name: api-secret, key: DB_PASSWORD }
+      volumeMounts:
+        - name: config
+          mountPath: /etc/api        # each key becomes a file
+          readOnly: true
+  volumes:
+    - name: config
+      configMap:
+        name: api-config</code></pre>
+      <table>
+        <thead>
+          <tr><th>Method</th><th>When values change</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Environment variables</td>
+            <td>
+              Read <b>once</b> at container start. A change has no effect until
+              the pod restarts (e.g. <code>kubectl rollout restart</code>).
+            </td>
+          </tr>
+          <tr>
+            <td>Mounted volume</td>
+            <td>
+              The kubelet updates the files <b>eventually</b> (typically within
+              a minute or so). The app must re-read or watch them. Exception:
+              mounts using <code>subPath</code> are never updated.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. How "secret" is a Secret?</h4>
+      <pre><code>kubectl get secret api-secret -o jsonpath='{.data.DB_PASSWORD}' | base64 -d
+# s3cr3t     &lt;- anyone with "get secrets" can do this</code></pre>
+      <p>Differences from a ConfigMap are real but limited:</p>
+      <ul>
+        <li>Secrets can be encrypted at rest in etcd (<a href="k8s-study-4-admin.html#q46">Q46</a>); ConfigMaps aren't.</li>
+        <li>The kubelet keeps Secret volumes in memory (tmpfs), not on node disk.</li>
+        <li>Secrets are only sent to nodes running pods that use them.</li>
+        <li>You can write RBAC that allows ConfigMaps but not Secrets.</li>
+      </ul>
+      <p>What actually protects them:</p>
+      <ol>
+        <li>
+          <b>Encryption at rest</b> – ideally KMS-backed. Without it, an etcd
+          backup file contains every password in plain base64.
+        </li>
+        <li>
+          <b>RBAC</b> – <code>get</code>, <code>list</code> and
+          <code>watch</code> on secrets all reveal values. Also,
+          anyone who can <b>create pods</b> in a namespace can mount any Secret
+          in it – that's effectively read access.
+        </li>
+        <li>
+          <b>External secret managers</b> – Vault, AWS Secrets Manager, Azure
+          Key Vault, GCP Secret Manager – with External Secrets Operator (syncs
+          into Secrets) or the Secrets Store CSI driver (mounts directly).
+          Rotation, audit and access policy live there.
+        </li>
+        <li>
+          <b>Git hygiene</b> – never commit plain Secret YAML (base64 is not
+          encryption); use Sealed Secrets or SOPS if they must live in git.
+        </li>
+      </ol>
+
+      <h4>4. Useful details</h4>
+      <ul>
+        <li>
+          Secret types: <code>Opaque</code> (generic),
+          <code>kubernetes.io/tls</code> (tls.crt/tls.key),
+          <code>kubernetes.io/dockerconfigjson</code> (image pull credentials).
+        </li>
+        <li>
+          <code>stringData</code> lets you write plain text; the API server
+          stores it base64-encoded in <code>data</code>.
+        </li>
+        <li>
+          <code>immutable: true</code> prevents accidental changes and reduces
+          load on the API server (kubelets stop watching it).
+        </li>
+        <li>Each object is limited to about 1 MiB – not for large files.</li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>Rotating a database password safely:</p>
+        <ol>
+          <li>Create the new password in the database (old still valid).</li>
+          <li>
+            Update it in Vault; External Secrets Operator syncs the Kubernetes
+            Secret within its refresh interval.
+          </li>
+          <li>
+            If the app reads it from an env var:
+            <code>kubectl rollout restart deploy/api</code> – a rolling restart
+            picks up the new value without downtime. If it reads a mounted file
+            and reloads on change, nothing to do.
+          </li>
+          <li>After all pods use the new password, revoke the old one.</li>
+        </ol>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>Believing base64 is encryption.</li>
+          <li>
+            Updating a ConfigMap and wondering why nothing changed – env vars
+            need a restart; <code>subPath</code> mounts never update.
+          </li>
+          <li>
+            Logging the environment at startup – prints all secrets into your
+            log system.
+          </li>
+          <li>
+            Giving developers <code>list secrets</code> "to debug" – it returns
+            every value in the namespace.
+          </li>
+          <li>Referencing a missing key – the pod fails with <code>CreateContainerConfigError</code>.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Contrast the two, explain env vars vs mounted files (and the update
+          behaviour), then say clearly "Secrets are base64, not encrypted" and
+          list the real controls: encryption at rest, RBAC (including the
+          create-pods loophole), an external secret store, no secrets in git.
+          Follow-ups: how you rotate a secret, and how you'd get secrets into
+          a GitOps setup.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q8">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q9">
+      <h3>Q9. What are Namespaces?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A namespace is a logical partition inside one cluster: a scope for
+          object names and the unit to which RBAC, ResourceQuotas, LimitRanges,
+          NetworkPolicies and Pod Security levels are applied. It is an
+          organisational and policy boundary, not a hard security or network
+          boundary on its own.
+        </p>
+      </div>
+
+      <h4>1. What a namespace scopes</h4>
+      <ul>
+        <li>
+          <b>Names</b> – two teams can both have a Deployment called
+          <code>api</code> in different namespaces.
+        </li>
+        <li>
+          <b>Policies</b> – RoleBindings, ResourceQuotas, LimitRanges,
+          NetworkPolicies and Pod Security Admission labels all apply per
+          namespace.
+        </li>
+        <li>
+          <b>DNS</b> – Services get <code>&lt;svc&gt;.&lt;ns&gt;.svc.cluster.local</code>;
+          the short name <code>api</code> resolves inside the same namespace only.
+        </li>
+        <li>
+          <b>Deletion</b> – deleting a namespace deletes everything in it.
+        </li>
+      </ul>
+      <p>
+        Some resources are <b>cluster-scoped</b> and live outside any namespace:
+        Nodes, PersistentVolumes, StorageClasses, ClusterRoles, CRDs,
+        Namespaces themselves.
+        <code>kubectl api-resources --namespaced=false</code> lists them.
+      </p>
+
+      <h4>2. Built-in namespaces</h4>
+      <table>
+        <thead>
+          <tr><th>Namespace</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>default</code></td><td>Where objects go if you don't specify one. Avoid using it for real workloads.</td></tr>
+          <tr><td><code>kube-system</code></td><td>Cluster components: CoreDNS, kube-proxy, CNI, metrics-server.</td></tr>
+          <tr><td><code>kube-public</code></td><td>Readable by everyone, rarely used.</td></tr>
+          <tr><td><code>kube-node-lease</code></td><td>Node heartbeat Lease objects.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>3. What namespaces do NOT isolate</h4>
+      <ul>
+        <li>
+          <b>Network</b> – a pod in <code>team-a</code> can call a Service in
+          <code>team-b</code> unless a NetworkPolicy blocks it
+          (<a href="k8s-study-2-networking.html#q26">Q26</a>).
+        </li>
+        <li>
+          <b>Nodes and the kernel</b> – pods from different namespaces share
+          nodes. A container escape crosses namespaces.
+        </li>
+        <li>
+          <b>The control plane</b> – one noisy namespace can overload the API
+          server for everyone.
+        </li>
+      </ul>
+      <p>
+        That's why namespaces are "soft" multi-tenancy (<a href="k8s-study-4-admin.html#q47">Q47</a>).
+      </p>
+
+      <h4>4. How to split</h4>
+      <p>
+        Common patterns: per team (<code>team-payments</code>), per application
+        (<code>checkout</code>), or per team-and-environment in a shared non-prod
+        cluster (<code>checkout-dev</code>, <code>checkout-staging</code>).
+        Production and non-production are usually separate <b>clusters</b>,
+        not just namespaces – blast radius and upgrades are cluster-wide.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>Onboarding a new team gets a "namespace kit":</p>
+        <pre><code>kubectl create namespace team-search
+kubectl label namespace team-search \
+  pod-security.kubernetes.io/enforce=restricted \
+  team=search
+# then apply (usually via GitOps):
+#   RoleBinding    -&gt; search-devs group gets "edit" in team-search only
+#   ResourceQuota  -&gt; 8 CPU / 16Gi requests, 40 pods
+#   LimitRange     -&gt; default requests for containers that omit them
+#   NetworkPolicy  -&gt; default deny ingress, allow from the gateway namespace</code></pre>
+        <p>
+          The namespace on its own isolated almost nothing; the policies
+          attached to it are what make it a tenant boundary.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>Treating namespaces as a security boundary without NetworkPolicies and RBAC.</li>
+          <li>
+            A namespace stuck in <code>Terminating</code> – usually a resource
+            with a finalizer whose controller is gone (e.g. an uninstalled
+            operator's CRs). Find what's left with
+            <code>kubectl api-resources --verbs=list --namespaced -o name | xargs -n1 kubectl get -n &lt;ns&gt; --ignore-not-found</code>.
+          </li>
+          <li>Running everything in <code>default</code>.</li>
+          <li>
+            Calling a Service in another namespace by its short name – use
+            <code>svc.namespace</code>.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A namespace is a name scope and the attachment point for RBAC,
+          quotas, network and pod-security policies. On its own it doesn't
+          isolate network or nodes – you add policies to make it a tenant
+          boundary, and for hard isolation you use separate clusters."
+          Follow-ups: which resources are cluster-scoped, how cross-namespace
+          DNS works, and why a namespace gets stuck terminating.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q9">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q10">
+      <h3>Q10. What are labels and selectors?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Labels are key/value pairs attached to objects; selectors are queries
+          over labels. They are the glue of Kubernetes: Deployments find their
+          pods, Services find their endpoints, NetworkPolicies, PDBs and
+          affinity rules find their targets – always by label selector, never by
+          name. Annotations look similar but are for metadata, not selection.
+        </p>
+      </div>
+
+      <h4>1. Labels</h4>
+      <pre><code>metadata:
+  labels:
+    app.kubernetes.io/name: checkout      # recommended common labels
+    app.kubernetes.io/version: "2.4.1"
+    app.kubernetes.io/part-of: shop
+    env: prod
+    tier: backend</code></pre>
+      <ul>
+        <li>
+          Keys can have a DNS prefix (<code>app.kubernetes.io/</code>); names and
+          values are short (up to 63 characters) and limited to letters, digits,
+          <code>-</code>, <code>_</code>, <code>.</code>.
+        </li>
+        <li>
+          Labels are indexed for selection – keep them small and meaningful.
+          Free-form data (git commit message, owner email, tool config) goes in
+          <b>annotations</b>.
+        </li>
+      </ul>
+
+      <h4>2. Two kinds of selectors</h4>
+      <table>
+        <thead>
+          <tr><th>Kind</th><th>Example</th><th>Used by</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Equality-based</td>
+            <td><code>env=prod,tier!=frontend</code></td>
+            <td>Services (<code>spec.selector</code> is a plain map – AND of equalities)</td>
+          </tr>
+          <tr>
+            <td>Set-based</td>
+            <td><code>env in (prod,staging)</code>, <code>!canary</code></td>
+            <td>
+              Deployments, ReplicaSets, Jobs, NetworkPolicies, PDBs, affinity –
+              via <code>matchLabels</code> + <code>matchExpressions</code>
+              (operators <code>In</code>, <code>NotIn</code>,
+              <code>Exists</code>, <code>DoesNotExist</code>)
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code>selector:
+  matchLabels:
+    app: checkout
+  matchExpressions:
+    - key: env
+      operator: In
+      values: ["prod", "staging"]
+    - key: canary
+      operator: DoesNotExist</code></pre>
+
+      <h4>3. Where selectors wire things together</h4>
+      <pre><code>Deployment.spec.selector      --&gt; which pods its ReplicaSets own
+Service.spec.selector         --&gt; which pods become endpoints
+NetworkPolicy.podSelector     --&gt; which pods the policy protects
+PodDisruptionBudget.selector  --&gt; which pods a drain must keep up
+podAntiAffinity.labelSelector --&gt; which pods to stay away from
+nodeSelector                  --&gt; which nodes (by node labels) a pod may use</code></pre>
+      <p>
+        This loose coupling is powerful: you can add a pod to a Service just by
+        labelling it – and dangerous: a too-broad selector silently grabs pods it
+        shouldn't.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          Debugging a misbehaving pod without killing it: remove the label the
+          Service and ReplicaSet select on.
+        </p>
+        <pre><code>kubectl get pods -l app=checkout --show-labels
+kubectl label pod checkout-7c9d-abcde app=checkout-debug --overwrite</code></pre>
+        <p>
+          Now the Service stops sending it traffic (not selected any more) and
+          the ReplicaSet sees only 2 of 3 pods, so it creates a fresh one. The
+          broken pod keeps running in isolation for you to inspect – then
+          delete it.
+        </p>
+        <pre><code>kubectl get pods -l 'env in (prod,staging),tier!=frontend'
+kubectl get pods -L app.kubernetes.io/version     # show label as a column</code></pre>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Two Deployments whose selectors overlap (both
+            <code>app: api</code>) – their ReplicaSets fight over the same pods
+            and a Service routes to both versions.
+          </li>
+          <li>
+            Changing a Deployment's selector – immutable; changing pod template
+            labels so they no longer match the selector is rejected.
+          </li>
+          <li>
+            Putting the version label in a Service selector – during a rollout
+            the Service matches only one version and loses half its endpoints.
+          </li>
+          <li>Storing large or frequently changing data in labels instead of annotations.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Labels are identifying key/values; selectors query them; every
+          relationship in Kubernetes – Deployment to pods, Service to endpoints,
+          policies to targets – is a label selector." Mention equality vs
+          set-based, and annotations as the non-selectable sibling. A nice
+          practical touch is the "relabel a pod to quarantine it" trick.
+          Follow-ups: what happens if two Deployments share labels, and the
+          recommended <code>app.kubernetes.io/*</code> labels.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q10">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q11">
+      <h3>
+        Q11. Explain PV, PVC and StorageClass. Why is my pod Pending on a volume?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A <b>PersistentVolumeClaim</b> is the app's request for storage; a
+          <b>PersistentVolume</b> is the actual disk bound to it; a
+          <b>StorageClass</b> tells a CSI driver how to create PVs on demand.
+          Pods mount PVCs, so data outlives pods. Pods stay Pending on volumes
+          when the claim can't be bound or the disk can't be attached where the
+          pod can run – usually a missing StorageClass, a zone mismatch, or a
+          ReadWriteOnce disk still attached elsewhere.
+        </p>
+      </div>
+
+      <h4>1. Why three objects?</h4>
+      <p>
+        Separation of concerns. The <b>developer</b> says "I need 20 GiB of fast
+        storage, mountable by one node" (PVC) without knowing whether that's an
+        EBS volume, an Azure disk or a Ceph RBD image. The <b>platform team</b>
+        defines what "fast" means (StorageClass). The <b>CSI driver</b> creates
+        and attaches the real disk (PV).
+      </p>
+      <pre><code>Pod --mounts--&gt; PVC "data" --bound to--&gt; PV "pvc-3f2a..." --backed by--&gt; cloud disk vol-0abc
+                   |
+                   +-- storageClassName: fast-ssd --&gt; StorageClass --&gt; CSI driver (provisioner)</code></pre>
+
+      <h4>2. Dynamic provisioning, step by step</h4>
+      <ol>
+        <li>You create a PVC with <code>storageClassName: fast-ssd</code> (or none, to use the default class).</li>
+        <li>
+          Depending on <code>volumeBindingMode</code>: with
+          <code>Immediate</code> the disk is created now; with
+          <code>WaitForFirstConsumer</code> it waits until a pod using the PVC
+          is scheduled, so the disk is created in <b>that pod's zone</b>.
+        </li>
+        <li>The CSI provisioner creates the disk and a PV object; the PVC becomes <code>Bound</code>.</li>
+        <li>
+          When the pod lands on a node, the CSI driver <b>attaches</b> the disk
+          to the node and <b>mounts</b> it into the pod.
+        </li>
+        <li>
+          When the PVC is deleted, the <code>reclaimPolicy</code> decides:
+          <code>Delete</code> (default for dynamic PVs – the disk is destroyed)
+          or <code>Retain</code> (PV becomes <code>Released</code>; data kept
+          for manual recovery).
+        </li>
+      </ol>
+      <pre><code>apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com          # example CSI driver
+parameters:
+  type: gp3
+reclaimPolicy: Retain                 # keep data if the PVC is deleted
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true            # PVCs can be resized later</code></pre>
+
+      <h4>3. Access modes – about nodes, not pods</h4>
+      <table>
+        <thead>
+          <tr><th>Mode</th><th>Meaning</th><th>Typical backend</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ReadWriteOnce (RWO)</td><td>Mounted read-write by <b>one node</b> (several pods on that node can share it)</td><td>Block disks: EBS, Azure Disk, PD</td></tr>
+          <tr><td>ReadWriteOncePod (RWOP)</td><td>Exactly one pod</td><td>CSI block disks that support it</td></tr>
+          <tr><td>ReadOnlyMany (ROX)</td><td>Read-only on many nodes</td><td>File storage, some block disks</td></tr>
+          <tr><td>ReadWriteMany (RWX)</td><td>Read-write on many nodes</td><td>NFS, EFS, Azure Files, CephFS</td></tr>
+        </tbody>
+      </table>
+
+      <h4>4. Why a pod is Pending on a volume</h4>
+      <table>
+        <thead>
+          <tr><th>Symptom (events)</th><th>Cause and fix</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PVC <code>Pending</code>: "no persistent volumes available… and no storage class is set"</td>
+            <td>No default StorageClass and none specified. Set one or mark a class as default.</td>
+          </tr>
+          <tr>
+            <td>PVC <code>Pending</code>: "waiting for first consumer"</td>
+            <td>Normal with <code>WaitForFirstConsumer</code> – it binds when a pod is scheduled.</td>
+          </tr>
+          <tr>
+            <td>Pod: "volume node affinity conflict"</td>
+            <td>
+              Disk was created in zone A (<code>Immediate</code> binding), pod
+              can only go to zone B. Use <code>WaitForFirstConsumer</code>;
+              for an existing disk, schedule into its zone.
+            </td>
+          </tr>
+          <tr>
+            <td>Pod <code>ContainerCreating</code>: "Multi-Attach error for volume"</td>
+            <td>
+              RWO disk still attached to the old node – e.g. a RollingUpdate
+              starting the new pod before the old one released the disk, or a
+              dead node. Use <code>Recreate</code> strategy or a StatefulSet;
+              for dead nodes, wait for detach or remove the node.
+            </td>
+          </tr>
+          <tr>
+            <td>Provisioning failed: quota / permissions</td>
+            <td>Cloud quota exceeded or the CSI driver's identity lacks permission – read the CSI controller logs.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A PostgreSQL pod on a 3-zone cluster is stuck Pending after a node pool
+          change:
+        </p>
+        <pre><code>kubectl describe pod pg-0
+# Events: 0/6 nodes are available: 3 node(s) had volume node affinity conflict,
+#         3 node(s) didn't match Pod's node affinity/selector.
+kubectl get pv $(kubectl get pvc data-pg-0 -o jsonpath='{.spec.volumeName}') \
+  -o jsonpath='{.spec.nodeAffinity}'
+# ... topology.kubernetes.io/zone In [eu-west-1a]</code></pre>
+        <p>
+          The disk lives in <code>eu-west-1a</code>, but the only nodes allowed
+          by the pod's selector are now in 1b and 1c. Block disks can't cross
+          zones, so the fix is to add nodes in 1a (or restore the data into a new
+          disk in another zone) – not to delete the PVC, which with
+          <code>reclaimPolicy: Delete</code> would destroy the data.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>Deleting a PVC with <code>reclaimPolicy: Delete</code> and losing the database.</li>
+          <li>Expecting RWX from a block-disk StorageClass – it will never bind.</li>
+          <li>Using <code>hostPath</code> for "persistence" – data is tied to one node and lost when the pod moves.</li>
+          <li>
+            Treating PVs as backups – a PV is a single disk in one zone; you
+            still need snapshots or application-level backups.
+          </li>
+          <li>Forgetting <code>allowVolumeExpansion</code> – you can't grow the PVC later without migrating.</li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          Explain the three objects with the developer/platform/driver split,
+          then dynamic provisioning and the two settings that cause the most
+          incidents: <code>volumeBindingMode: WaitForFirstConsumer</code> (zone
+          awareness) and <code>reclaimPolicy</code> (data loss). For "why
+          Pending", say you'd read the events on both the pod and the PVC and
+          list the classic causes. Follow-ups: RWO vs RWX, how StatefulSets
+          create one PVC per replica (<a href="k8s-study-3-advanced.html#q27">Q27</a>), and how to resize
+          a volume.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q11">&uarr; Short interview answer</a></p>
+    </section>
+    <p class="pager"><a href="k8s-study.html">Contents</a> · <a href="k8s-study-2-networking.html">Part 2: Networking, Config, Resources, Rollouts &rarr;</a></p>
+
+    <p class="src">
+      <b>Further reading:</b>
+      <a href="https://kubernetes.io/docs/home/">Kubernetes documentation</a>
+      ·
+      <a href="https://kubernetes.io/docs/reference/kubectl/">kubectl reference</a>
+      ·
+      <a href="https://gateway-api.sigs.k8s.io/">Gateway API</a>
+      ·
+      <a href="https://kubernetes.io/blog/">Kubernetes blog</a>
+    </p>
+  </body>
+</html>

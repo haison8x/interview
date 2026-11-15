@@ -1,0 +1,2383 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>K8s Study Guide 3/5 – Advanced Workloads and Extensibility</title>
+    <style>
+      :root {
+        --fg: #222;
+        --bg: #fff;
+        --muted: #555;
+        --link: #0b5cad;
+        --code-bg: #f3f3f3;
+        --pre-bg: #f5f5f5;
+        --rule: #ddd;
+        --tldr: #0b5cad;
+        --tldr-bg: #eef4fb;
+        --ex: #2e7d32;
+        --ex-bg: #eef7ee;
+        --warn: #b26a00;
+        --warn-bg: #fdf5e6;
+        --tip: #6a3fa0;
+        --tip-bg: #f4eefa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #ddd;
+          --bg: #1b1b1b;
+          --muted: #aaa;
+          --link: #6db3ff;
+          --code-bg: #2a2a2a;
+          --pre-bg: #2a2a2a;
+          --rule: #444;
+          --tldr: #6db3ff;
+          --tldr-bg: #1f2a36;
+          --ex: #7fcf85;
+          --ex-bg: #1f2c20;
+          --warn: #f0b45a;
+          --warn-bg: #33291a;
+          --tip: #c3a0f0;
+          --tip-bg: #2a2236;
+        }
+      }
+      body {
+        font-family:
+          Segoe UI,
+          system-ui,
+          sans-serif;
+        line-height: 1.65;
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 24px 16px 80px;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      a {
+        color: var(--link);
+      }
+      h1 {
+        font-size: 1.6em;
+      }
+      h2 {
+        margin-top: 2.6em;
+        border-bottom: 2px solid var(--rule);
+        padding-bottom: 4px;
+      }
+      section.q {
+        margin-top: 2.4em;
+        padding-top: 0.6em;
+        border-top: 1px solid var(--rule);
+      }
+      section.q h3 {
+        margin: 0.2em 0 0.6em;
+        font-size: 1.25em;
+      }
+      section.q h4 {
+        margin: 1.6em 0 0.4em;
+        font-size: 1.05em;
+      }
+      code {
+        font-family: Consolas, monospace;
+        background: var(--code-bg);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 0.92em;
+      }
+      pre {
+        background: var(--pre-bg);
+        padding: 12px;
+        overflow-x: auto;
+        border-radius: 4px;
+        line-height: 1.45;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0.8em 0;
+        font-size: 0.95em;
+        display: block;
+        overflow-x: auto;
+      }
+      th,
+      td {
+        border: 1px solid var(--rule);
+        padding: 6px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--pre-bg);
+      }
+      .tldr,
+      .example,
+      .pitfall,
+      .interview {
+        border-left: 4px solid;
+        border-radius: 4px;
+        padding: 8px 14px;
+        margin: 1em 0;
+      }
+      .tldr {
+        border-color: var(--tldr);
+        background: var(--tldr-bg);
+      }
+      .example {
+        border-color: var(--ex);
+        background: var(--ex-bg);
+      }
+      .pitfall {
+        border-color: var(--warn);
+        background: var(--warn-bg);
+      }
+      .interview {
+        border-color: var(--tip);
+        background: var(--tip-bg);
+      }
+      .label {
+        font-weight: 700;
+        margin: 0.2em 0 0.4em;
+      }
+      .tldr .label {
+        color: var(--tldr);
+      }
+      .example .label {
+        color: var(--ex);
+      }
+      .pitfall .label {
+        color: var(--warn);
+      }
+      .interview .label {
+        color: var(--tip);
+      }
+      .example pre,
+      .pitfall pre {
+        background: var(--bg);
+      }
+      .ref {
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+      .intro {
+        color: var(--muted);
+      }
+      nav ol {
+        padding-left: 20px;
+      }
+      nav li {
+        margin: 2px 0;
+      }
+      nav a {
+        text-decoration: none;
+      }
+      nav details {
+        margin: 4px 0;
+      }
+      nav summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .back {
+        display: inline-block;
+        margin-bottom: 8px;
+        text-decoration: none;
+        font-size: 0.95em;
+      }
+      .back:hover {
+        text-decoration: underline;
+      }
+      .src {
+        margin-top: 3em;
+        font-size: 0.9em;
+        color: var(--muted);
+      }
+      .pager {
+        margin: 2.4em 0 0;
+        padding-top: 1em;
+        border-top: 1px solid var(--rule);
+      }
+      .pager a {
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back" href="k8s-study.html">&larr; Study guide contents</a>
+    <h1>Kubernetes Study Guide – Part 3: Advanced Workloads and Extensibility</h1>
+    <p class="intro">Questions 27–38 of 60, explained in depth. Short interview answers are on the <a href="k8s.html">Kubernetes interview page</a>.</p>
+    <nav>
+      <ol>
+        <li value="27"><a href="#q27">What is a StatefulSet, and how does it differ from a Deployment?</a></li>
+        <li value="28"><a href="#q28">What is a DaemonSet, and when would you use it?</a></li>
+        <li value="29"><a href="#q29">Jobs and CronJobs – what should you know?</a></li>
+        <li value="30"><a href="#q30">What is a service mesh, and why use one?</a></li>
+        <li value="31"><a href="#q31">How do you control where pods run? Taints, tolerations, affinity, topology spread.</a></li>
+        <li value="32"><a href="#q32">What are sidecar containers, and how are they used?</a></li>
+        <li value="33"><a href="#q33">What are native sidecars, and what problem do they solve?</a></li>
+        <li value="34"><a href="#q34">What are admission webhooks and admission policies?</a></li>
+        <li value="35"><a href="#q35">How do you achieve zero-downtime deployments? Why do users still get errors during a rolling update?</a></li>
+        <li value="36"><a href="#q36">What are Custom Resource Definitions (CRDs)?</a></li>
+        <li value="37"><a href="#q37">What is an operator, and how does it work?</a></li>
+        <li value="38"><a href="#q38">What is in-place pod resize?</a></li>
+      </ol>
+    </nav>
+    <!-- ================================================================ -->
+
+    <section class="q" id="q27">
+      <h3>
+        Q27. What is a StatefulSet, and how does it differ from a Deployment?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A StatefulSet runs pods that each have a <b>stable identity</b>: a
+          fixed ordinal name (<code>db-0</code>, <code>db-1</code>), a stable DNS
+          name through a headless Service, and their own PersistentVolumeClaim
+          that follows them. Pods are created, updated and deleted in a
+          predictable order. A Deployment treats pods as interchangeable cattle;
+          a StatefulSet treats them as named members of a cluster.
+        </p>
+      </div>
+
+      <h4>1. Why Deployments are not enough for stateful systems</h4>
+      <p>
+        A Deployment assumes every replica is identical and disposable. When a
+        pod dies, the replacement gets a random name
+        (<code>api-7d9f8c-x2kq4</code>), a new IP, and – if the template
+        mounts a PVC – the <i>same</i> shared volume as every other replica.
+        That is fine for a stateless web API. It is wrong for a database
+        cluster, where:
+      </p>
+      <ul>
+        <li>
+          each member has its <b>own</b> data on its own disk (replica 1's data
+          must not be mounted by replica 2);
+        </li>
+        <li>
+          members find each other by a <b>stable address</b> (the primary is
+          configured as "db-0", replication peers are listed by name);
+        </li>
+        <li>
+          the <b>order</b> matters: the first member bootstraps the cluster,
+          the others join it.
+        </li>
+      </ul>
+
+      <h4>2. The three guarantees a StatefulSet gives</h4>
+      <table>
+        <thead>
+          <tr><th>Guarantee</th><th>How it works</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Stable name</td>
+            <td>
+              Pods are named <code>&lt;statefulset&gt;-&lt;ordinal&gt;</code>:
+              <code>db-0</code>, <code>db-1</code>, <code>db-2</code>. If
+              <code>db-1</code> is deleted, the replacement is again called
+              <code>db-1</code> – possibly on another node, with a new IP.
+            </td>
+          </tr>
+          <tr>
+            <td>Stable DNS</td>
+            <td>
+              <code>spec.serviceName</code> points at a <b>headless</b> Service
+              (<code>clusterIP: None</code>). Each pod gets a DNS record
+              <code>db-1.db.prod.svc.cluster.local</code> that always resolves
+              to whatever IP <code>db-1</code> currently has.
+            </td>
+          </tr>
+          <tr>
+            <td>Stable storage</td>
+            <td>
+              <code>volumeClaimTemplates</code> create one PVC per pod:
+              <code>data-db-0</code>, <code>data-db-1</code>… When
+              <code>db-1</code> is rescheduled, it re-attaches
+              <code>data-db-1</code>, so it comes back with its own data.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Ordering: creation, scaling and updates</h4>
+      <p>
+        With the default <code>podManagementPolicy: OrderedReady</code>:
+      </p>
+      <ul>
+        <li>
+          <b>Scale up / creation:</b> <code>db-0</code> first; <code>db-1</code>
+          is only created when <code>db-0</code> is Running and Ready, and so
+          on.
+        </li>
+        <li>
+          <b>Scale down:</b> in reverse – the highest ordinal is removed first.
+        </li>
+        <li>
+          <b>Rolling update:</b> also in reverse ordinal order, one pod at a
+          time, waiting for each to become Ready before the next. A
+          <code>partition</code> lets you update only ordinals ≥ N – a simple
+          built-in canary.
+        </li>
+      </ul>
+      <p>
+        <code>podManagementPolicy: Parallel</code> drops the ordering for
+        creation and scaling (useful when members don't depend on each other
+        starting in order); identity and storage guarantees remain.
+      </p>
+      <pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  clusterIP: None          # headless: per-pod DNS records
+  selector:
+    app: db
+  ports:
+    - port: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+spec:
+  serviceName: db          # must match the headless Service
+  replicas: 3
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:      # one PVC per pod: data-db-0, data-db-1, ...
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi</code></pre>
+
+      <h4>4. What happens to the data on scale-down and delete</h4>
+      <p>
+        By default, PVCs created from <code>volumeClaimTemplates</code> are
+        <b>not deleted</b> when you scale down or delete the StatefulSet. This
+        is deliberate: losing a database disk because someone typed
+        <code>replicas: 1</code> would be catastrophic. Scale back up and
+        <code>db-2</code> re-attaches the old <code>data-db-2</code>. The
+        <code>persistentVolumeClaimRetentionPolicy</code> field
+        (<code>whenDeleted</code>, <code>whenScaled</code>:
+        <code>Retain</code> or <code>Delete</code>) lets you opt into automatic
+        cleanup.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>A 3-replica PostgreSQL StatefulSet, node 2 fails:</p>
+        <pre><code>before:  db-0 (node1, data-db-0)  db-1 (node2, data-db-1)  db-2 (node3, data-db-2)
+node2 dies, db-1 is eventually deleted (see Q59 for the force-delete caveat)
+after:   db-0 (node1, data-db-0)  db-1 (node4, data-db-1)  db-2 (node3, data-db-2)
+                                   ^ same name, same DNS, same disk, new node/IP</code></pre>
+        <p>
+          The replication config that says "replica connects to
+          <code>db-0.db</code>" keeps working without change. With a
+          Deployment, the new pod would have a random name and either no data or
+          another replica's data.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Forgetting the headless Service or pointing
+            <code>serviceName</code> at a normal ClusterIP Service – per-pod
+            DNS names don't resolve.
+          </li>
+          <li>
+            Zonal disks: <code>data-db-1</code> lives in zone A, so
+            <code>db-1</code> can only ever run in zone A. If zone A has no
+            capacity, the pod stays Pending.
+          </li>
+          <li>
+            A broken rolling update with <code>OrderedReady</code> can get stuck
+            on a pod that never becomes Ready; after reverting the template you
+            may have to delete that pod manually so it is recreated with the old
+            spec.
+          </li>
+          <li>
+            Believing the StatefulSet "makes the database HA". It only gives
+            identity and storage; replication, failover, backups and upgrades
+            are the database's (or an operator's – <a href="#q37">Q37</a>) job.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A StatefulSet gives each replica a stable name, stable DNS via a
+          headless Service, and its own PVC through volumeClaimTemplates, with
+          ordered startup, scale-down and updates. I use it for clustered
+          stateful systems – databases, Kafka, etcd – but for production
+          databases I'd prefer an operator or a managed service, because the
+          StatefulSet doesn't handle failover or backups." Likely follow-ups:
+          what happens to PVCs on scale-down; how to do a canary with
+          <code>partition</code>; why the pod isn't replaced when its node is
+          unreachable.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q27">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q28">
+      <h3>Q28. What is a DaemonSet, and when would you use it?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A DaemonSet ensures exactly one copy of a pod runs on every node (or
+          every node matching a selector). New nodes get the pod automatically;
+          removed nodes take it with them. It is for node-level agents: log
+          collectors, metrics exporters, CNI/CSI plugins, security agents.
+        </p>
+      </div>
+
+      <h4>1. How it differs from a Deployment</h4>
+      <p>
+        A Deployment says "run N replicas somewhere". A DaemonSet says "run one
+        per node" – there is no <code>replicas</code> field; the count is the
+        number of eligible nodes. The DaemonSet controller creates one pod per
+        node and pins it there with node affinity; the normal scheduler then
+        places it. If you add 5 nodes, you get 5 more pods without touching
+        anything.
+      </p>
+
+      <h4>2. Why node agents need this</h4>
+      <ul>
+        <li>
+          <b>Log collection</b> – container logs are files on each node's disk
+          (<code>/var/log/pods</code>), so a collector must run on every node
+          and mount that host path.
+        </li>
+        <li>
+          <b>Node metrics</b> – node-exporter reads the node's own
+          <code>/proc</code> and <code>/sys</code>.
+        </li>
+        <li>
+          <b>Networking and storage</b> – CNI agents (Calico, Cilium) program
+          the node's network; CSI node plugins mount volumes on that node.
+          kube-proxy itself usually runs as a DaemonSet.
+        </li>
+        <li>
+          <b>Security</b> – runtime detection (Falco, Tetragon) watches syscalls
+          on each node.
+        </li>
+      </ul>
+
+      <h4>3. Tolerations and which nodes it lands on</h4>
+      <p>
+        The controller automatically adds tolerations for common node
+        conditions (not-ready, unreachable, disk/memory/PID pressure,
+        unschedulable), so a log agent keeps running on a node under pressure or
+        being drained. It does <b>not</b> automatically tolerate your custom
+        taints, such as the control-plane taint or a <code>dedicated=gpu</code>
+        taint – add them explicitly if the agent must run there. To target only
+        some nodes, use <code>nodeSelector</code> or node affinity in the pod
+        template.
+      </p>
+      <pre><code>spec:
+  template:
+    spec:
+      nodeSelector:
+        accelerator: nvidia     # only GPU nodes
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: gpu
+          effect: NoSchedule
+      priorityClassName: system-node-critical   # don't get preempted</code></pre>
+
+      <h4>4. Updating a DaemonSet</h4>
+      <p>
+        <code>updateStrategy: RollingUpdate</code> (default) replaces pods node
+        by node; <code>maxUnavailable</code> (default 1) controls how many nodes
+        are without the agent at once. Because there can only be one pod per
+        node by default, an update briefly leaves that node without the agent;
+        <code>maxSurge</code> lets the new pod start before the old one stops
+        (needed when the agent must never be absent, e.g. a CNI). The alternative
+        strategy <code>OnDelete</code> only updates a node's pod when you delete
+        it manually – useful for agents you want to roll out very carefully.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>kubectl get ds -A</code></td>
+            <td>
+              DESIRED vs CURRENT vs READY – DESIRED is the number of eligible
+              nodes. A gap means some nodes can't run the pod.
+            </td>
+          </tr>
+          <tr>
+            <td><code>kubectl rollout status ds/fluent-bit -n logging</code></td>
+            <td>Follows a DaemonSet rolling update node by node.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl rollout undo ds/fluent-bit -n logging</code></td>
+            <td>Rolls the DaemonSet back, same mechanism as Deployments.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A cluster has 10 nodes: 2 control-plane (tainted
+          <code>node-role.kubernetes.io/control-plane:NoSchedule</code>) and 8
+          workers. You deploy a Fluent Bit DaemonSet without tolerations:
+          <code>kubectl get ds</code> shows <b>DESIRED 8</b>. Control-plane logs
+          are not collected. Add a toleration for the control-plane taint (or
+          <code>operator: Exists</code> to tolerate everything) and DESIRED
+          becomes 10. Then the autoscaler adds 3 workers during a spike –
+          DESIRED becomes 13 automatically, and logs from the new nodes are
+          collected from their first minute.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            No resource requests/limits on the agent: a leaky log shipper on
+            every node can starve all nodes at once. Set them, and give critical
+            agents a high priority class.
+          </li>
+          <li>
+            Requests that are too large: the DaemonSet pod is reserved on
+            <i>every</i> node, so 500m CPU × 100 nodes = 50 CPUs of overhead.
+          </li>
+          <li>
+            Expecting a DaemonSet pod to move when its node dies – it won't; it
+            belongs to that node.
+          </li>
+          <li>
+            Using a DaemonSet for an ordinary app "to spread it across nodes" –
+            use a Deployment with topology spread constraints
+            (<a href="#q31">Q31</a>) instead.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A DaemonSet runs one pod per eligible node and follows the node
+          lifecycle automatically. I use it for node agents – log collection,
+          node metrics, CNI and CSI plugins, security sensors – usually with
+          host-path mounts, explicit tolerations for tainted nodes, tight
+          resource limits and a node-critical priority class." Follow-ups: how
+          to run it only on some nodes; how updates work (maxUnavailable,
+          maxSurge, OnDelete); why DESIRED is lower than the node count.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q28">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q29">
+      <h3>Q29. Jobs and CronJobs – what should you know?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A Job runs pods until a given number complete successfully, retrying
+          failures up to <code>backoffLimit</code>. A CronJob creates a Job on a
+          cron schedule. In production you control overlap
+          (<code>concurrencyPolicy</code>), timeouts
+          (<code>activeDeadlineSeconds</code>), cleanup
+          (<code>ttlSecondsAfterFinished</code>, history limits) and make the
+          work idempotent because it may run more than once.
+        </p>
+      </div>
+
+      <h4>1. Job: run to completion</h4>
+      <p>
+        Deployments restart pods forever; a Job is done when its pods exit
+        successfully. Key fields:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>completions</code></td>
+            <td>How many successful pods are needed (default 1).</td>
+          </tr>
+          <tr>
+            <td><code>parallelism</code></td>
+            <td>How many pods may run at the same time.</td>
+          </tr>
+          <tr>
+            <td><code>completionMode: Indexed</code></td>
+            <td>
+              Each pod gets an index (<code>JOB_COMPLETION_INDEX</code> env) –
+              e.g. 10 pods each process shard 0–9.
+            </td>
+          </tr>
+          <tr>
+            <td><code>backoffLimit</code></td>
+            <td>
+              How many failed retries before the Job is marked Failed (default
+              6). Retries back off exponentially (10s, 20s, 40s… capped).
+            </td>
+          </tr>
+          <tr>
+            <td><code>activeDeadlineSeconds</code></td>
+            <td>
+              Hard timeout for the whole Job; running pods are killed when it
+              expires.
+            </td>
+          </tr>
+          <tr>
+            <td><code>ttlSecondsAfterFinished</code></td>
+            <td>Deletes the finished Job (and its pods) after N seconds.</td>
+          </tr>
+          <tr>
+            <td><code>podFailurePolicy</code></td>
+            <td>
+              Rules per exit code / condition: e.g. exit code 42 = "bad input,
+              fail the Job now, don't retry"; pod disrupted by node drain = "don't
+              count against backoffLimit".
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The pod template's <code>restartPolicy</code> must be
+        <code>OnFailure</code> (the kubelet restarts the container in the same
+        pod) or <code>Never</code> (the Job controller creates a new pod for
+        each retry – easier to read the logs of each failed attempt).
+      </p>
+
+      <h4>2. CronJob: Jobs on a schedule</h4>
+      <pre><code>apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nightly-report
+spec:
+  schedule: "0 2 * * *"            # 02:00 every day
+  timeZone: "Europe/Paris"         # explicit, don't depend on controller clock
+  concurrencyPolicy: Forbid        # skip a run if the previous one is still going
+  startingDeadlineSeconds: 600     # if missed by more than 10 min, skip it
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600  # never run longer than 1 hour
+      ttlSecondsAfterFinished: 86400
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: report
+              image: my-reports:1.8
+              args: ["--date", "yesterday"]</code></pre>
+      <p><code>concurrencyPolicy</code> options:</p>
+      <ul>
+        <li><code>Allow</code> (default) – runs may overlap.</li>
+        <li><code>Forbid</code> – skip the new run while the old one runs.</li>
+        <li><code>Replace</code> – kill the old run and start the new one.</li>
+      </ul>
+
+      <h4>3. "At least once", not "exactly once"</h4>
+      <p>
+        Kubernetes can run your Job's work more than once: a pod is retried
+        after a crash, a node dies after the work finished but before the
+        success was recorded, or (rarely) the CronJob controller creates a run
+        twice. It can also <i>miss</i> a run (controller down, deadline
+        passed). So the work must be <b>idempotent</b> – e.g. "upsert the
+        report for date X", not "append a report row" – and important schedules
+        need monitoring for "last successful run" rather than trusting that the
+        schedule fired.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A CronJob runs every 15 minutes with default
+          <code>concurrencyPolicy: Allow</code>. One day the database is slow and
+          a run takes 40 minutes:
+        </p>
+        <pre><code>00:00 run A starts ............................ 00:40 A ends
+00:15 run B starts ............................ (slower: competes with A)
+00:30 run C starts ............................ (slower still)
+00:45 run D starts ...</code></pre>
+        <p>
+          Overlapping runs make the database even slower – a feedback loop.
+          With <code>Forbid</code>, runs B and C are simply skipped, and D
+          starts on a quiet database. Add <code>activeDeadlineSeconds: 840</code>
+          so a single run can never exceed its 15-minute slot.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Finished Jobs and pods piling up (thousands of Completed pods) when
+            no TTL or history limits are set.
+          </li>
+          <li>
+            A sidecar (e.g. mesh proxy) that never exits keeps the Job "running"
+            forever – use native sidecars (<a href="#q33">Q33</a>).
+          </li>
+          <li>
+            Omitting <code>timeZone</code> and getting runs at the wrong local
+            hour, especially around daylight-saving changes.
+          </li>
+          <li>
+            A CronJob that missed too many schedules (e.g. it was suspended for
+            days) without <code>startingDeadlineSeconds</code> can refuse to
+            start and log an error – set a deadline.
+          </li>
+          <li>
+            Non-idempotent jobs (sending emails, charging cards) that run twice
+            after a retry.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A Job runs pods to completion with retries via backoffLimit, timeouts
+          via activeDeadlineSeconds, and cleanup via ttlSecondsAfterFinished;
+          Indexed mode splits work into shards. A CronJob creates Jobs on a
+          schedule – I set timeZone, concurrencyPolicy Forbid for jobs that must
+          not overlap, a startingDeadlineSeconds, and I make the work idempotent
+          because Kubernetes gives at-least-once semantics." Follow-ups:
+          OnFailure vs Never; how to alert on a CronJob that silently stopped
+          running; podFailurePolicy.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q29">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q30">
+      <h3>Q30. What is a service mesh, and why use one?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A service mesh puts a proxy layer in the path of all service-to-service
+          traffic and controls it centrally. That gives you mutual TLS and
+          identity-based authorisation, retries/timeouts/traffic splitting, and
+          uniform metrics and traces – without changing application code. The
+          price is extra complexity, latency and resource usage.
+        </p>
+      </div>
+
+      <h4>1. Architecture: data plane and control plane</h4>
+      <ul>
+        <li>
+          <b>Data plane</b> – proxies that every request passes through.
+          Classic design: an Envoy (Istio) or linkerd2-proxy (Linkerd)
+          <b>sidecar in every pod</b>, injected by a mutating admission webhook
+          (<a href="#q34">Q34</a>). iptables rules in the pod redirect all
+          inbound and outbound traffic through it.
+        </li>
+        <li>
+          <b>Control plane</b> – watches Services, pods and mesh policies, issues
+          certificates to each workload, and pushes routing configuration to the
+          proxies.
+        </li>
+      </ul>
+      <pre><code>  pod A                                pod B
+ ┌──────────────────┐   mTLS        ┌──────────────────┐
+ │ app ──► proxy ───┼──────────────►│ proxy ──► app    │
+ └──────────────────┘               └──────────────────┘
+          ▲  config + certs              ▲
+          └────────── control plane ─────┘</code></pre>
+      <p>
+        <b>Sidecar-less designs</b> reduce the per-pod cost: Istio's
+        <b>ambient mode</b> uses a per-node proxy (ztunnel) for L4 mTLS and
+        optional shared "waypoint" proxies for L7 features; Cilium implements
+        mesh features with eBPF plus a per-node Envoy.
+      </p>
+
+      <h4>2. What you get</h4>
+      <table>
+        <thead>
+          <tr><th>Area</th><th>Feature</th><th>Without a mesh you'd need…</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Security</td>
+            <td>
+              Automatic mTLS: every workload gets a certificate tied to its
+              ServiceAccount identity; policies like "only
+              <code>orders</code> may call <code>payments</code>".
+            </td>
+            <td>TLS code and certificate rotation in every service.</td>
+          </tr>
+          <tr>
+            <td>Traffic</td>
+            <td>
+              Per-request (L7) load balancing, retries, timeouts, circuit
+              breaking, canary splits (90/10), fault injection.
+            </td>
+            <td>Client libraries in every language.</td>
+          </tr>
+          <tr>
+            <td>Observability</td>
+            <td>
+              Request rate, error rate and latency for every service pair;
+              distributed tracing headers propagated by the proxy (the app still
+              has to forward them).
+            </td>
+            <td>Instrumenting every service consistently.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        It also fixes a real Kubernetes limitation: kube-proxy balances
+        <i>connections</i>, so long-lived gRPC/HTTP2 connections stick to one
+        pod (<a href="k8s-study-2-networking.html#q13">Q13</a>). A mesh proxy balances individual
+        requests.
+      </p>
+
+      <h4>3. The costs</h4>
+      <ul>
+        <li>
+          <b>Latency</b>: two extra proxy hops per call (typically
+          sub-millisecond to a few ms each).
+        </li>
+        <li>
+          <b>Resources</b>: a sidecar per pod – 1,000 pods × 50 MiB = 50 GiB of
+          memory just for proxies.
+        </li>
+        <li>
+          <b>Operational complexity</b>: another control plane to upgrade, new
+          CRDs, new failure modes ("is it the app or the mesh?"), certificate
+          authority to manage.
+        </li>
+        <li>
+          <b>Lifecycle issues</b> with classic sidecars (startup order, Jobs that
+          don't finish) – solved by native sidecars or ambient mode.
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A compliance audit requires all internal traffic to be encrypted and
+          the payments service to accept calls only from the orders service.
+          Without a mesh: 25 services in 3 languages each need TLS code,
+          certificate distribution and caller checks. With Istio:
+        </p>
+        <pre><code>apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  mtls:
+    mode: STRICT            # all workloads: mTLS only
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: payments-allow-orders
+  namespace: payments
+spec:
+  selector:
+    matchLabels:
+      app: payments
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/orders/sa/orders"]</code></pre>
+        <p>
+          Two manifests instead of 25 code changes; certificates rotate
+          automatically.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Adopting a mesh "because everyone does" before having a concrete
+            need – then spending months operating it.
+          </li>
+          <li>
+            Retries configured at several layers (client, mesh, gateway): one
+            failure becomes 3 × 3 × 3 = 27 requests – a retry storm that turns a
+            blip into an outage. Retry only idempotent calls, with budgets.
+          </li>
+          <li>
+            Switching to STRICT mTLS while some clients are still outside the
+            mesh – their calls start failing. Use PERMISSIVE during migration.
+          </li>
+          <li>
+            Expecting tracing to work automatically – the app must propagate
+            trace headers between inbound and outbound calls.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A service mesh adds a proxy data plane managed by a control plane, so
+          mTLS, service-to-service authorisation, retries, timeouts, traffic
+          splitting and golden-signal metrics come from infrastructure instead of
+          code. Examples are Istio – sidecar or ambient – Linkerd and Cilium. I'd
+          adopt one for a concrete need like zero-trust mTLS or fine-grained
+          canaries, weighing the latency, memory and operational cost." Follow-ups:
+          how sidecar injection works; sidecar vs ambient; retry storms; how
+          mTLS identity maps to ServiceAccounts.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q30">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q31">
+      <h3>
+        Q31. How do you control where pods run? Taints, tolerations, affinity,
+        topology spread.
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Node selectors and node affinity <b>attract</b> pods to nodes with
+          certain labels. Taints <b>repel</b> pods from nodes unless they carry
+          a matching toleration. Pod affinity/anti-affinity places pods relative
+          to other pods, and topology spread constraints spread replicas evenly
+          across zones or nodes. Combine them carefully: every hard rule reduces
+          the set of nodes a pod can use.
+        </p>
+      </div>
+
+      <h4>1. How the scheduler decides</h4>
+      <p>For every unscheduled pod, kube-scheduler runs two phases:</p>
+      <ol>
+        <li>
+          <b>Filter</b> – remove nodes that can't run the pod: not enough
+          unreserved CPU/memory (requests), untolerated taints, failing
+          <code>required</code> affinity rules, volume zone mismatch, hard
+          spread constraints.
+        </li>
+        <li>
+          <b>Score</b> – rank the remaining nodes using
+          <code>preferred</code> rules, soft spread constraints, resource
+          balance, image locality; bind the pod to the best one.
+        </li>
+      </ol>
+      <p>
+        If the filter phase leaves zero nodes, the pod is Pending and its events
+        list why each node was rejected (<a href="k8s-study-5-scenarios.html#q54">Q54</a>). All these
+        rules apply <b>at scheduling time only</b>
+        ("IgnoredDuringExecution"): changing a node's labels later does not
+        evict pods already running there (except NoExecute taints).
+      </p>
+
+      <h4>2. The four tools</h4>
+      <table>
+        <thead>
+          <tr><th>Tool</th><th>Direction</th><th>Typical use</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>nodeSelector</code> / node affinity</td>
+            <td>Pod → wants certain nodes</td>
+            <td>GPU workloads on GPU nodes; arm64 images on arm64 nodes.</td>
+          </tr>
+          <tr>
+            <td>Taints + tolerations</td>
+            <td>Node → rejects pods</td>
+            <td>Dedicated pools (GPU, system, spot); keep apps off control plane.</td>
+          </tr>
+          <tr>
+            <td>Pod (anti-)affinity</td>
+            <td>Pod ↔ other pods</td>
+            <td>Cache next to app; never two replicas on one node.</td>
+          </tr>
+          <tr>
+            <td>Topology spread</td>
+            <td>Replicas ↔ topology domains</td>
+            <td>Even spread across zones and nodes for HA.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Taint <b>effects</b>: <code>NoSchedule</code> (new pods without a
+        toleration are not scheduled), <code>PreferNoSchedule</code> (soft
+        version), <code>NoExecute</code> (also evicts running pods that don't
+        tolerate it – used by the node controller for unreachable nodes,
+        <a href="k8s-study-5-scenarios.html#q59">Q59</a>).
+      </p>
+
+      <h4>3. Dedicated node pool: taint + toleration + affinity</h4>
+      <p>
+        A toleration only says "I am <i>allowed</i> on tainted nodes" – it does
+        not pull the pod there. To dedicate a GPU pool you need both:
+      </p>
+      <pre><code># 1. repel everyone else from the GPU nodes
+kubectl taint nodes gpu-1 gpu-2 dedicated=gpu:NoSchedule
+kubectl label nodes gpu-1 gpu-2 pool=gpu
+
+# 2. in the GPU workload's pod spec
+spec:
+  tolerations:              # allowed on the tainted nodes
+    - key: dedicated
+      operator: Equal
+      value: gpu
+      effect: NoSchedule
+  affinity:
+    nodeAffinity:           # and required to go there
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: pool
+                operator: In
+                values: ["gpu"]</code></pre>
+
+      <h4>4. Topology spread constraints</h4>
+      <pre><code>spec:
+  topologySpreadConstraints:
+    - maxSkew: 1                               # max difference between domains
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule         # hard rule
+      labelSelector:
+        matchLabels:
+          app: api
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway        # soft rule
+      labelSelector:
+        matchLabels:
+          app: api</code></pre>
+      <p>
+        <code>maxSkew: 1</code> across zones means the number of
+        <code>app=api</code> pods in any zone may differ from the least-loaded
+        zone by at most 1. This replaces most uses of pod anti-affinity, which
+        only expresses "not together" and becomes expensive in large clusters.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          6 replicas, 3 zones (a, b, c), the zone constraint above. The
+          scheduler places 2 + 2 + 2. Zone c goes down: 4 pods remain (2 + 2 +
+          0) and the Deployment creates 2 replacements. Placing them in a or b
+          gives 3 + 2 + 0 – a skew of 3 against zone c. What happens next
+          depends on whether zone c still "counts":
+        </p>
+        <ul>
+          <li>
+            If zone c's Node objects are gone, the domain disappears from the
+            calculation and the pods go to a and b (3 + 3).
+          </li>
+          <li>
+            If the nodes still exist but are NotReady (tainted), the default
+            <code>nodeTaintsPolicy: Ignore</code> still counts zone c with 0
+            pods, so with <code>DoNotSchedule</code> the replacements stay
+            <b>Pending</b> – exactly when you need capacity most. Setting
+            <code>nodeTaintsPolicy: Honor</code>, or using
+            <code>ScheduleAnyway</code> for the zone rule, avoids this.
+          </li>
+        </ul>
+        <p>
+          Without any spread rule, the scheduler could have put 5 of the 6
+          replicas in zone a originally, and a single zone failure would have
+          taken out most of the capacity.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Tolerations without affinity: the "dedicated" pod lands on ordinary
+            nodes; or affinity without toleration: the pod is Pending forever.
+          </li>
+          <li>
+            Required anti-affinity per hostname with more replicas than nodes:
+            replica 6 on a 5-node cluster stays Pending.
+          </li>
+          <li>
+            Spread rules with a <code>labelSelector</code> that doesn't match the
+            pod's own labels – the constraint silently does nothing.
+          </li>
+          <li>
+            Stacking many hard rules (zone spread + node anti-affinity + node
+            affinity + a zonal PVC) until no node satisfies them all.
+          </li>
+          <li>
+            Spread is evaluated only at scheduling; after a zone recovers,
+            pods are not rebalanced automatically (that needs the Descheduler).
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "The scheduler filters then scores nodes. I attract pods with node
+          affinity, repel them with taints – a toleration only permits, so
+          dedicating a pool needs both a taint and affinity – place pods relative
+          to each other with pod (anti-)affinity, and use topology spread
+          constraints with maxSkew to spread replicas across zones and nodes.
+          I prefer soft rules where possible because hard rules are the main
+          cause of Pending pods." Follow-ups: NoSchedule vs NoExecute; why the
+          spread is uneven after a zone outage; how the default 300s tolerations
+          work.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q31">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q32">
+      <h3>Q32. What are sidecar containers, and how are they used?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A sidecar is a helper container in the same pod as the main app. It
+          shares the pod's network namespace (same IP, <code>localhost</code>)
+          and can share volumes, so it can add capabilities – log shipping,
+          proxying, config reloading, auth – without changing the app's code or
+          image.
+        </p>
+      </div>
+
+      <h4>1. What containers in one pod share</h4>
+      <ul>
+        <li>
+          <b>Network namespace</b> – one IP, one port space. The sidecar reaches
+          the app on <code>localhost:8080</code>; two containers can't both
+          listen on the same port.
+        </li>
+        <li>
+          <b>Volumes</b> – any volume declared in the pod can be mounted by
+          several containers, typically an <code>emptyDir</code>.
+        </li>
+        <li>
+          <b>Lifecycle and node</b> – scheduled together, on the same node,
+          deleted together. Their resource requests add up for scheduling.
+        </li>
+        <li>
+          Optionally the <b>process namespace</b>
+          (<code>shareProcessNamespace: true</code>) so one container can see or
+          signal the other's processes.
+        </li>
+      </ul>
+      <p>
+        Each container still has its own image, filesystem, resource limits and
+        restart behaviour.
+      </p>
+
+      <h4>2. Common patterns</h4>
+      <table>
+        <thead>
+          <tr><th>Pattern</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Log shipper</td>
+            <td>
+              Legacy app writes to <code>/var/log/app/*.log</code>; Fluent Bit
+              sidecar reads the shared volume and ships the logs.
+            </td>
+          </tr>
+          <tr>
+            <td>Proxy (ambassador)</td>
+            <td>
+              Envoy mesh proxy; Cloud SQL Auth Proxy so the app connects to
+              <code>localhost:5432</code> and the proxy handles IAM and TLS.
+            </td>
+          </tr>
+          <tr>
+            <td>Adapter</td>
+            <td>
+              Exporter that converts the app's custom stats into Prometheus
+              metrics.
+            </td>
+          </tr>
+          <tr>
+            <td>Config / secret reloader</td>
+            <td>
+              Watches a ConfigMap or Vault, writes files to a shared volume and
+              signals the app to reload.
+            </td>
+          </tr>
+          <tr>
+            <td>Auth proxy</td>
+            <td>oauth2-proxy in front of an internal dashboard with no login.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. When <i>not</i> to use a sidecar</h4>
+      <ul>
+        <li>
+          If the helper is per <b>node</b>, not per pod (log collection from
+          stdout, node metrics) – a DaemonSet (<a href="#q28">Q28</a>) costs one
+          pod per node instead of one container per pod.
+        </li>
+        <li>
+          If the two processes scale independently – separate Deployments. A
+          sidecar always scales 1:1 with the app.
+        </li>
+        <li>
+          If the app can do it natively (log to stdout, expose
+          <code>/metrics</code>) – one less moving part.
+        </li>
+      </ul>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          An old Java app logs only to files. Instead of rewriting it, add a
+          sidecar that tails the files from a shared <code>emptyDir</code>:
+        </p>
+        <pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: legacy-app
+spec:
+  containers:
+    - name: app
+      image: legacy-app:3.2
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log/app        # app writes here
+    - name: log-shipper
+      image: fluent/fluent-bit:3.2
+      resources:
+        requests: { cpu: 20m, memory: 32Mi }
+        limits: { memory: 64Mi }
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log/app        # sidecar reads here
+          readOnly: true
+  volumes:
+    - name: logs
+      emptyDir:
+        sizeLimit: 1Gi                   # don't fill the node's disk</code></pre>
+        <p>
+          With 40 replicas, the shipper costs 40 × 32 MiB ≈ 1.3 GiB of reserved
+          memory – compare with a DaemonSet if the app could log to stdout.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Startup race: the app starts before its proxy is ready and its first
+            outbound calls fail.
+          </li>
+          <li>
+            Jobs never complete because the sidecar never exits; or the sidecar
+            is killed before the app during shutdown and the last requests or
+            log lines are lost. Both are solved by native sidecars
+            (<a href="#q33">Q33</a>).
+          </li>
+          <li>
+            No resource limits on the sidecar – it can OOM the pod or starve the
+            app.
+          </li>
+          <li>
+            Port conflicts: both containers trying to listen on the same port in
+            the shared network namespace.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A sidecar is a helper container in the same pod. Because it shares
+          the pod's network and volumes, it can proxy traffic on localhost or
+          read files the app writes – log shippers, mesh proxies, cloud auth
+          proxies, config reloaders. I'd use it when the helper is genuinely per
+          instance; per-node concerns go in a DaemonSet. Classic sidecars had
+          ordering problems, which native sidecars fix." Follow-ups: what is
+          shared and what isn't; how sidecar injection works; Jobs with sidecars.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q32">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q33">
+      <h3>Q33. What are native sidecars, and what problem do they solve?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A native sidecar is an init container with
+          <code>restartPolicy: Always</code>. Kubernetes then knows it is a
+          helper: it starts <i>before</i> the app containers (and can block them
+          until its startup probe passes), keeps running and is restarted if it
+          dies, and is stopped <i>after</i> the app containers. This fixes the
+          startup race, Jobs that never finish, and sidecars dying before the
+          app during shutdown. GA since 1.33.
+        </p>
+      </div>
+
+      <h4>1. The problems with classic sidecars</h4>
+      <p>
+        Before native sidecars, all containers in <code>spec.containers</code>
+        were equal – Kubernetes started them roughly in parallel and stopped
+        them in parallel. Three recurring bugs followed:
+      </p>
+      <ol>
+        <li>
+          <b>Startup race</b> – the app starts and makes outbound calls before
+          the mesh proxy is listening: "connection refused" on the first
+          requests. Workarounds: sleep loops in the app's entrypoint, or the
+          mesh's "hold application until proxy starts" hacks.
+        </li>
+        <li>
+          <b>Jobs that never complete</b> – a Job is done when all its
+          containers exit. The app finishes, but the proxy or log shipper runs
+          forever, so the Job hangs. Workarounds: the app calls the proxy's
+          "quit" endpoint at the end.
+        </li>
+        <li>
+          <b>Shutdown order</b> – on pod deletion, every container gets SIGTERM
+          at once. The proxy may exit first while the app is still finishing
+          in-flight requests that need it; the log shipper may exit before the
+          app writes its last lines.
+        </li>
+      </ol>
+
+      <h4>2. How native sidecars work</h4>
+      <pre><code>pod start
+  init container 1 (regular)      runs to completion
+  sidecar (init, restartPolicy: Always) starts ──► startupProbe passes
+  init container 2 (regular)      runs to completion (can already use the sidecar)
+  app containers start            sidecar keeps running alongside
+pod stop
+  app containers get SIGTERM and exit
+  sidecars get SIGTERM after the app containers have stopped (reverse order)</code></pre>
+      <ul>
+        <li>
+          Init containers still run in the order listed; a sidecar listed first
+          is available to all later init containers and to the app.
+        </li>
+        <li>
+          The kubelet moves on to the next init container as soon as the
+          sidecar has <b>started</b> (or its startupProbe has passed) – it does
+          not wait for it to complete.
+        </li>
+        <li>
+          Unlike regular init containers, sidecars may have liveness, readiness
+          and startup probes, and are restarted when they crash, regardless of
+          the pod's <code>restartPolicy</code>.
+        </li>
+        <li>
+          For Jobs, completion depends only on the regular containers – the
+          sidecar is terminated once the app finishes.
+        </li>
+      </ul>
+
+      <h4>3. Manifest</h4>
+      <pre><code>apiVersion: batch/v1
+kind: Job
+metadata:
+  name: export
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: proxy
+          image: envoyproxy/envoy:v1.32
+          restartPolicy: Always        # this makes it a native sidecar
+          startupProbe:                # app waits until the proxy is ready
+            httpGet:
+              path: /ready
+              port: 9901
+            periodSeconds: 1
+            failureThreshold: 30
+      containers:
+        - name: export
+          image: my-exporter:2.0      # Job completes when this exits</code></pre>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>A nightly export Job running in a mesh:</p>
+        <table>
+          <thead>
+            <tr><th>Situation</th><th>Classic sidecar</th><th>Native sidecar</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>t=0s pod starts</td>
+              <td>App and proxy start together; app's first DB call fails.</td>
+              <td>Proxy starts; app waits until the startup probe passes (~1s).</td>
+            </tr>
+            <tr>
+              <td>t=20min export done</td>
+              <td>App exits 0; proxy keeps running; Job shows Running forever.</td>
+              <td>App exits 0; proxy gets SIGTERM; Job is Complete.</td>
+            </tr>
+            <tr>
+              <td>Pod deleted mid-run</td>
+              <td>Proxy and app stop together; app's last DB writes fail.</td>
+              <td>App stops first, then the proxy.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Putting <code>restartPolicy: Always</code> on a container in
+            <code>spec.containers</code> – it only has this meaning on
+            <b>init</b> containers.
+          </li>
+          <li>
+            No startup probe on the sidecar: the app is started as soon as the
+            sidecar <i>process</i> starts, which may still be before it is
+            listening.
+          </li>
+          <li>
+            Forgetting that the sidecar's resource requests are added for the
+            pod's whole lifetime – unlike regular init containers, whose
+            requests are only needed during initialisation.
+          </li>
+          <li>
+            <code>terminationGracePeriodSeconds</code> must cover the app's
+            shutdown <i>plus</i> the sidecars' shutdown, since they now stop one
+            after the other.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Native sidecars are init containers with restartPolicy Always.
+          Kubernetes starts them before the app – optionally gated by a startup
+          probe – keeps them running and restarted, and stops them after the
+          app. That fixes the classic sidecar problems: proxies not ready at
+          app startup, Jobs that never finish because the sidecar keeps
+          running, and sidecars exiting before the app finishes draining. It's
+          GA in 1.33, and meshes like Istio use it." Follow-ups: why it's an
+          init container rather than a new field; how probes on sidecars behave;
+          resource accounting.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q33">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q34">
+      <h3>Q34. What are admission webhooks and admission policies?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Admission control is the last gate in the API server before an object
+          is saved to etcd. <b>Mutating</b> admission may change the object
+          (inject a sidecar, add defaults); <b>validating</b> admission may only
+          accept or reject it (enforce policy). You extend it with webhooks –
+          your own HTTPS service – or with in-process CEL rules
+          (ValidatingAdmissionPolicy) that need no extra service.
+        </p>
+      </div>
+
+      <h4>1. Where admission sits in the request path</h4>
+      <pre><code>kubectl apply
+   │
+   ▼
+authentication ──► authorization (RBAC) ──► mutating admission
+                                              (built-in + webhooks, may modify)
+                                                     │
+                                         schema validation
+                                                     │
+                                          validating admission
+                                     (built-in + webhooks + CEL policies)
+                                                     │
+                                                     ▼
+                                                   etcd</code></pre>
+      <p>
+        Many core features are built-in admission plugins: ServiceAccount
+        token mounting, LimitRanger defaults (<a href="k8s-study-4-admin.html#q48">Q48</a>),
+        ResourceQuota, Pod Security Admission (<a href="k8s-study-4-admin.html#q43">Q43</a>). Webhooks
+        and policies are how <i>you</i> add rules.
+      </p>
+
+      <h4>2. Mutating vs validating</h4>
+      <table>
+        <thead>
+          <tr><th></th><th>Mutating</th><th>Validating</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Can modify the object</td>
+            <td>Yes – returns a JSON patch</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td>Typical uses</td>
+            <td>
+              Sidecar injection (Istio, Vault agent), default labels,
+              resources or securityContext, image digest pinning
+            </td>
+            <td>
+              Block <code>:latest</code> tags, require labels, allowed
+              registries only, require signed images, deny privileged pods
+            </td>
+          </tr>
+          <tr>
+            <td>Runs</td>
+            <td>First (may be re-invoked after other mutations)</td>
+            <td>After all mutation, so it sees the final object</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>3. Webhooks vs CEL policies</h4>
+      <p>
+        A <b>webhook</b> is configured with a
+        <code>MutatingWebhookConfiguration</code> or
+        <code>ValidatingWebhookConfiguration</code>: which resources/operations
+        to send, the HTTPS endpoint (usually a Service in the cluster),
+        <code>failurePolicy</code> (<code>Fail</code> or <code>Ignore</code>),
+        <code>timeoutSeconds</code>, and selectors to limit scope. Kyverno and
+        OPA Gatekeeper are policy engines built on webhooks.
+      </p>
+      <p>
+        A <b>ValidatingAdmissionPolicy</b> (GA in 1.30) is evaluated inside the
+        API server with CEL expressions – no service to run, no network hop, no
+        outage if a pod is down:
+      </p>
+      <pre><code>apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: no-latest-tag
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["deployments"]
+  validations:
+    - expression: >-
+        object.spec.template.spec.containers.all(c,
+          !c.image.endsWith(':latest') &amp;&amp; c.image.contains(':'))
+      message: "Images must use an explicit, non-latest tag."
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: no-latest-tag-binding
+spec:
+  policyName: no-latest-tag
+  validationActions: ["Deny"]      # or Warn / Audit while rolling out
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        env: prod</code></pre>
+      <p>
+        A newer CEL-based <b>MutatingAdmissionPolicy</b> does the same for
+        simple mutations. Webhooks remain necessary when a rule needs external
+        data (e.g. verifying an image signature against a registry).
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A team runs a validating webhook with <code>failurePolicy: Fail</code>
+          matching <b>all pods in all namespaces</b>. The webhook Deployment has
+          one replica. Its node is drained during an upgrade:
+        </p>
+        <ol>
+          <li>The webhook pod is evicted; its replacement must be created.</li>
+          <li>
+            Creating that pod requires… calling the webhook, which is down. The
+            API server rejects it.
+          </li>
+          <li>
+            Now <i>no</i> pod can be created anywhere – including CoreDNS and
+            the CNI pods on new nodes. The cluster slowly degrades.
+          </li>
+        </ol>
+        <p>
+          Fix: exclude <code>kube-system</code> and the webhook's own namespace
+          via <code>namespaceSelector</code>, run 2+ replicas with a PDB, set a
+          short <code>timeoutSeconds</code>, and consider
+          <code>failurePolicy: Ignore</code> for non-security webhooks. Recovery
+          in the moment: delete the webhook configuration object.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Webhooks matching everything (<code>*</code> resources, all
+            namespaces) – every API call pays their latency and depends on their
+            availability.
+          </li>
+          <li>
+            Mutations that fight each other (two webhooks setting the same
+            field), or a mutating webhook changing a field that a GitOps tool
+            then reports as drift.
+          </li>
+          <li>
+            Expired TLS certificate on the webhook service – every matching
+            request fails.
+          </li>
+          <li>
+            Admission only checks objects when they are created or updated;
+            existing objects that violate a new policy keep running – audit them
+            separately.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Admission runs in the API server after authn and RBAC and before
+          etcd. Mutating admission can change objects – sidecar injection,
+          defaults – and validating admission can only allow or deny – policy
+          enforcement. You extend it with webhooks, which Kyverno and Gatekeeper
+          use, or with in-process CEL ValidatingAdmissionPolicies for simple
+          rules. The operational risk is a failing webhook with failurePolicy
+          Fail blocking the cluster, so I scope them narrowly and exclude system
+          namespaces." Follow-ups: ordering of mutating and validating; Warn and
+          Audit modes; what happens to existing objects.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q34">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q35">
+      <h3>
+        Q35. How do you achieve zero-downtime deployments? Why do users still
+        get errors during a rolling update?
+      </h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          Zero downtime needs four things: new pods only receive traffic once
+          they are truly ready (readiness probes), capacity never drops
+          (<code>maxUnavailable: 0</code>), old pods drain gracefully instead of
+          dying mid-request (preStop delay + SIGTERM handling + enough grace
+          period), and old and new versions can run side by side (backward
+          compatible APIs and database schema). Errors during a rolling update
+          usually come from the shutdown race: the pod stops before the load
+          balancers have stopped sending it traffic.
+        </p>
+      </div>
+
+      <h4>1. Deployment strategies</h4>
+      <table>
+        <thead>
+          <tr><th>Strategy</th><th>How</th><th>Trade-off</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Rolling update</td>
+            <td>
+              Built-in: replace pods gradually (<a href="k8s-study-2-networking.html#q18">Q18</a>).
+            </td>
+            <td>Cheap; old and new versions serve traffic at the same time.</td>
+          </tr>
+          <tr>
+            <td>Blue/green</td>
+            <td>
+              Run the full new version (green) next to the old (blue), test it,
+              then switch all traffic at once (Service selector or route).
+            </td>
+            <td>Instant switch and switch-back; double capacity during deploy.</td>
+          </tr>
+          <tr>
+            <td>Canary</td>
+            <td>
+              Send 5% → 25% → 100% of traffic to the new version, checking error
+              rate and latency at each step (Argo Rollouts, Flagger, Gateway API
+              weights).
+            </td>
+            <td>Smallest blast radius; needs good metrics and tooling.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>2. The shutdown race, step by step</h4>
+      <p>When a pod is deleted (rolling update, scale-down, drain):</p>
+      <pre><code>t=0     pod marked Terminating
+        ├─► kubelet: run preStop hook, then send SIGTERM to the container
+        └─► endpoint controller: remove pod from EndpointSlices
+                 └─► kube-proxy on every node updates iptables/nftables
+                 └─► ingress controller / cloud LB updates its upstreams
+t=0..~5s   routing updates are still propagating
+           → NEW requests can still arrive at this pod</code></pre>
+      <p>
+        These two branches run <b>in parallel</b>; nothing waits for the
+        routing update. If the app exits immediately on SIGTERM at t=0.1s,
+        requests routed to it in the next few seconds get "connection refused"
+        or 502. In-flight requests are cut off too if the app doesn't drain
+        them.
+      </p>
+
+      <h4>3. The fix: delay, drain, then exit</h4>
+      <pre><code>spec:
+  terminationGracePeriodSeconds: 45     # must cover preStop + drain
+  containers:
+    - name: api
+      image: my-api:2.4
+      lifecycle:
+        preStop:
+          sleep:
+            seconds: 10                 # built-in sleep action; older clusters:
+                                        # exec: { command: ["sleep", "10"] }
+      readinessProbe:
+        httpGet: { path: /ready, port: 8080 }
+        periodSeconds: 5
+---
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1</code></pre>
+      <ol>
+        <li>
+          <b>preStop sleep 10s</b> – the container keeps serving normally while
+          every load balancer removes the pod.
+        </li>
+        <li>
+          <b>SIGTERM</b> arrives – the app stops accepting new connections,
+          finishes in-flight requests, closes keep-alive connections, then exits.
+          (.NET's host, Spring Boot and most frameworks support graceful
+          shutdown; the process must actually receive the signal – see the
+          <a href="docker.html">Docker page</a>, Q12.)
+        </li>
+        <li>
+          The grace period clock started at t=0 and <b>includes</b> preStop:
+          45s = 10s preStop + up to 35s drain. When it runs out, SIGKILL.
+        </li>
+      </ol>
+
+      <h4>4. Version compatibility – the part outside Kubernetes</h4>
+      <p>
+        During any rolling update or canary, v1 and v2 run at the same time and
+        share the database. A v2 migration that renames a column breaks every
+        v1 pod still running. Use <b>expand/contract</b>: release 1 adds the new
+        column and writes both; release 2 reads the new column; release 3 drops
+        the old one. The same applies to API contracts between services and to
+        message formats on queues.
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A service handles 2,000 requests/s across 10 pods. During each deploy,
+          monitoring shows a burst of ~300 HTTP 502s.
+        </p>
+        <ul>
+          <li>
+            Each terminating pod gets ~200 req/s; routing takes ~1.5s to update
+            everywhere → ~300 requests sent to a pod that already exited.
+          </li>
+          <li>
+            Adding <code>preStop: sleep 10</code> removes those 502s – the pod
+            is still serving while it disappears from the load balancers.
+          </li>
+          <li>
+            A few errors remain for long requests (file uploads up to 60s) cut
+            off at the 30s default grace period. Raising
+            <code>terminationGracePeriodSeconds</code> to 75 fixes those.
+          </li>
+          <li>
+            Result: deploys at 2 p.m. with zero errors in the dashboards.
+          </li>
+        </ul>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            preStop sleep longer than the grace period – the pod is SIGKILLed
+            before it even receives SIGTERM.
+          </li>
+          <li>
+            Using <code>exec: sleep</code> in a distroless image that has no
+            <code>sleep</code> binary – the hook fails; use the built-in sleep
+            action.
+          </li>
+          <li>
+            Readiness probe that returns 200 before caches and connection pools
+            are warm – new pods get traffic too early.
+          </li>
+          <li>
+            Long-lived connections (WebSockets, gRPC streams) that the app never
+            closes – clients stay connected until SIGKILL.
+          </li>
+          <li>
+            Breaking database migrations run before the rollout completes.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Zero downtime needs readiness probes so new pods only get traffic when
+          ready, maxUnavailable 0 so capacity never drops, graceful termination,
+          and backward-compatible changes so two versions can coexist. The usual
+          cause of errors during rolling updates is that SIGTERM and endpoint
+          removal happen in parallel, so traffic still arrives after the app
+          exits – I fix it with a preStop sleep, proper SIGTERM draining and a
+          grace period that covers both. For risky changes I use canary with
+          automated analysis." Follow-ups: blue/green vs canary; expand/contract
+          migrations; long-lived connections.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q35">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q36">
+      <h3>Q36. What are Custom Resource Definitions (CRDs)?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          A CRD registers a new resource type with the Kubernetes API. After
+          that, objects of that type can be created, listed, watched,
+          RBAC-protected and stored in etcd exactly like built-in objects. A CRD
+          only stores data; a controller or operator (<a href="#q37">Q37</a>)
+          has to watch those objects and act on them.
+        </p>
+      </div>
+
+      <h4>1. What happens when you install a CRD</h4>
+      <ol>
+        <li>
+          The API server adds new REST endpoints, e.g.
+          <code>/apis/example.com/v1/namespaces/{ns}/databases</code>.
+        </li>
+        <li>
+          kubectl discovers them: <code>kubectl get databases</code>,
+          <code>kubectl explain database.spec</code> and
+          <code>kubectl apply</code> just work.
+        </li>
+        <li>
+          Objects are validated against the CRD's OpenAPI schema and stored in
+          etcd; RBAC, admission, watches and audit logging apply to them like any
+          other resource.
+        </li>
+      </ol>
+      <p>
+        This is why Kubernetes became a platform: cert-manager's
+        <code>Certificate</code>, Argo CD's <code>Application</code>,
+        Prometheus Operator's <code>ServiceMonitor</code>, Gateway API's
+        <code>HTTPRoute</code> are all CRDs.
+      </p>
+
+      <h4>2. Important parts of a CRD</h4>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Why it matters</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>scope</code></td>
+            <td><code>Namespaced</code> or <code>Cluster</code>.</td>
+          </tr>
+          <tr>
+            <td><code>versions[].schema</code></td>
+            <td>
+              Structural OpenAPI v3 schema: types, required fields, enums,
+              min/max. Invalid objects are rejected at admission time.
+            </td>
+          </tr>
+          <tr>
+            <td><code>x-kubernetes-validations</code></td>
+            <td>
+              CEL rules for cross-field checks, e.g. "replicas must be odd" or
+              "field is immutable".
+            </td>
+          </tr>
+          <tr>
+            <td><code>subresources.status</code></td>
+            <td>
+              Separates <code>spec</code> (desired, written by users) from
+              <code>status</code> (observed, written by the controller).
+            </td>
+          </tr>
+          <tr>
+            <td><code>additionalPrinterColumns</code></td>
+            <td>Extra columns in <code>kubectl get</code> output.</td>
+          </tr>
+          <tr>
+            <td>Multiple <code>versions</code></td>
+            <td>
+              v1beta1 and v1 served side by side; exactly one is the
+              <code>storage</code> version; a conversion webhook translates
+              between schemas when they differ.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <pre><code>apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: databases.example.com      # &lt;plural&gt;.&lt;group&gt;
+spec:
+  group: example.com
+  scope: Namespaced
+  names:
+    plural: databases
+    singular: database
+    kind: Database
+    shortNames: ["db"]
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Engine
+          type: string
+          jsonPath: .spec.engine
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: ["engine", "storageGB"]
+              properties:
+                engine:
+                  type: string
+                  enum: ["postgres", "mysql"]
+                storageGB:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string</code></pre>
+        <pre><code>kubectl apply -f - &lt;&lt;'EOF'
+apiVersion: example.com/v1
+kind: Database
+metadata:
+  name: orders
+spec:
+  engine: postgres
+  storageGB: 5000            # rejected: maximum is 1000
+EOF
+
+kubectl get db               # NAME   ENGINE    PHASE
+                             # orders postgres  (empty until a controller sets it)</code></pre>
+        <p>
+          Without a controller, the <code>Database</code> object exists but no
+          database is created – the CRD is just a typed, validated API record.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            <b>Deleting a CRD deletes every object of that type</b> in the
+            cluster. Uninstalling a Helm chart that owns the CRDs can wipe out all
+            Certificates or Applications.
+          </li>
+          <li>
+            Using a CRD as a general-purpose database – etcd is small (default
+            quota of a few GiB) and every object is watched; large or
+            high-churn data belongs elsewhere.
+          </li>
+          <li>
+            Schema changes without proper versioning: removing a field or
+            changing its type breaks existing objects and clients.
+          </li>
+          <li>
+            Ordering in GitOps: custom resources applied before their CRD exists
+            fail with "no matches for kind".
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "A CRD extends the Kubernetes API with a new resource type, with
+          schema validation, RBAC, watches and kubectl support for free. It is
+          only data; a controller reconciles it into real resources, and CRD
+          plus controller is the operator pattern. Most of the ecosystem –
+          cert-manager, Argo CD, Gateway API – is built this way." Follow-ups:
+          spec vs status; CRD versioning and conversion; CRDs vs ConfigMaps;
+          what happens when you delete a CRD.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q36">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q37">
+      <h3>Q37. What is an operator, and how does it work?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          An operator is a custom controller plus CRDs that encodes the
+          operational knowledge of a human operator for one application:
+          installing it, scaling it, backing it up, failing over, upgrading. It
+          runs a reconciliation loop – watch the custom resources, compare
+          desired with actual state, act to close the gap – just like the
+          built-in Deployment controller.
+        </p>
+      </div>
+
+      <h4>1. The reconciliation loop</h4>
+      <pre><code>          ┌──────────── watch events (CR changed, owned pod died, timer) ───┐
+          ▼                                                                 │
+   Reconcile(name)                                                          │
+     1. read the custom resource (desired state)                            │
+     2. read what exists: StatefulSets, Services, Secrets, the app itself   │
+     3. compute the difference                                              │
+     4. act: create / update / delete objects, call the app's admin API    │
+     5. write status (conditions, phase, observedGeneration)               │
+     6. requeue if not finished ───────────────────────────────────────────┘</code></pre>
+      <p>
+        Key design principle: <b>level-triggered, not edge-triggered</b>. The
+        reconcile function doesn't ask "what event happened?" but "what should
+        the world look like, and what does it look like now?". If the operator
+        crashes and misses events, the next reconcile still converges. Every
+        step must be <b>idempotent</b> – running it twice is harmless.
+      </p>
+
+      <h4>2. Building blocks</h4>
+      <ul>
+        <li>
+          <b>CRDs</b> (<a href="#q36">Q36</a>) – the API the user talks to.
+        </li>
+        <li>
+          <b>Owner references</b> – objects the operator creates point to the
+          custom resource; deleting the CR garbage-collects them.
+        </li>
+        <li>
+          <b>Finalizers</b> – block deletion of the CR until the operator has
+          cleaned up external things (take a final backup, delete a cloud
+          bucket).
+        </li>
+        <li>
+          <b>Status conditions</b> – <code>Ready</code>,
+          <code>Progressing</code>, <code>Degraded</code>, with
+          <code>observedGeneration</code> so users know whether the status
+          reflects the latest spec.
+        </li>
+        <li>
+          <b>Frameworks</b> – Kubebuilder / controller-runtime and Operator SDK
+          (Go), also Java (JOSDK), Python (Kopf) and others. They provide
+          caching, watches, work queues and leader election.
+        </li>
+      </ul>
+
+      <h4>3. What separates a good operator from a Helm chart</h4>
+      <p>
+        A Helm chart installs resources once. An operator keeps <b>managing</b>
+        them: day-2 operations. The Operator Framework's capability levels
+        describe this progression: basic install → seamless upgrades → full
+        lifecycle (backup, restore, failover) → deep insights (metrics,
+        alerts) → auto-pilot (auto-scaling, auto-tuning).
+      </p>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>A PostgreSQL cluster with the CloudNativePG operator:</p>
+        <pre><code>apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: orders-db
+spec:
+  instances: 3
+  storage:
+    size: 20Gi</code></pre>
+        <ol>
+          <li>
+            You apply 8 lines. The operator creates 3 pods with their PVCs,
+            Services for read-write and read-only traffic, certificates, and
+            configures streaming replication: 1 primary, 2 replicas.
+          </li>
+          <li>
+            The primary's node dies. The operator notices on its next reconcile,
+            promotes the most up-to-date replica, repoints the read-write
+            Service, and rebuilds the lost instance – in seconds, without a
+            human.
+          </li>
+          <li>
+            You change <code>instances: 3</code> to <code>5</code>: two new
+            replicas are cloned and join replication.
+          </li>
+          <li>
+            A minor version upgrade: replicas are updated first, then a
+            switchover moves the primary role, then the old primary is updated.
+          </li>
+        </ol>
+        <p>
+          A StatefulSet alone (<a href="#q27">Q27</a>) would give you 3 pods
+          with disks – but no replication setup, failover or safe upgrade order.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Installing an operator is installing privileged software – it often
+            needs broad cluster RBAC. Check who maintains it and what it can do.
+          </li>
+          <li>
+            Writing an operator for something a Helm chart or a Deployment
+            already handles – operators are worth it when there is real ongoing
+            operational logic.
+          </li>
+          <li>
+            Edge-triggered logic ("on create, do X") that breaks when events are
+            missed or replayed.
+          </li>
+          <li>
+            Stuck finalizers: the operator is uninstalled before its custom
+            resources, and they can never be deleted (namespace stuck in
+            Terminating).
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "An operator is CRDs plus a custom controller that automates the
+          operational knowledge for an application. It runs a level-triggered,
+          idempotent reconciliation loop: read the desired state from the custom
+          resource, observe the actual state, act, and report status. It uses
+          owner references for cleanup and finalizers for external resources.
+          The value is day-2 operations – failover, backups, upgrades – e.g.
+          CloudNativePG or Strimzi." Follow-ups: level vs edge triggering;
+          operator vs Helm; how you'd test one; finalizers.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q37">&uarr; Short interview answer</a></p>
+    </section>
+
+    <section class="q" id="q38">
+      <h3>Q38. What is in-place pod resize?</h3>
+      <div class="tldr">
+        <p class="label">Short answer</p>
+        <p>
+          In-place pod resize (GA in 1.35) lets you change a running container's
+          CPU and memory requests/limits through the pod's
+          <code>resize</code> subresource, without deleting and recreating the
+          pod. Each container's <code>resizePolicy</code> decides whether a
+          resource changes live or requires a container restart. The node must
+          have room for the new size, otherwise the resize stays pending.
+        </p>
+      </div>
+
+      <h4>1. Why it matters</h4>
+      <p>
+        Pod resources used to be immutable: to give a pod more memory you
+        recreated it – new pod, new IP, cold caches, dropped connections, and
+        for a StatefulSet member possibly a failover. That made vertical scaling
+        disruptive, so most teams over-provisioned instead. In-place resize
+        enables:
+      </p>
+      <ul>
+        <li>Rightsizing long-running pods without restarts.</li>
+        <li>
+          "Startup boost": generous CPU while a JVM/.NET app warms up, then
+          shrink it.
+        </li>
+        <li>
+          VPA's <code>InPlaceOrRecreate</code> update mode, which applies
+          recommendations in place when possible.
+        </li>
+      </ul>
+
+      <h4>2. How a resize flows</h4>
+      <ol>
+        <li>
+          You (or VPA) patch the pod's <b>resize subresource</b> with new
+          resources. <code>spec</code> now holds the desired values.
+        </li>
+        <li>
+          The kubelet checks whether the node's allocatable capacity can fit the
+          new requests.
+          <ul>
+            <li>
+              Fits → it updates the container's cgroup limits through the
+              runtime (or restarts the container, per
+              <code>resizePolicy</code>).
+            </li>
+            <li>
+              Doesn't fit now → the pod gets a <code>PodResizePending</code>
+              condition (reason <i>Deferred</i>), retried later; can never fit
+              on this node → reason <i>Infeasible</i>.
+            </li>
+          </ul>
+        </li>
+        <li>
+          While applying, the pod has a <code>PodResizeInProgress</code>
+          condition. <code>status.containerStatuses[].resources</code> shows
+          what is <b>actually</b> applied – compare it with
+          <code>spec</code>.
+        </li>
+      </ol>
+      <pre><code>spec:
+  containers:
+    - name: app
+      image: my-app:4.1
+      resizePolicy:
+        - resourceName: cpu
+          restartPolicy: NotRequired       # change CPU live (default)
+        - resourceName: memory
+          restartPolicy: RestartContainer  # app sizes heap at startup
+      resources:
+        requests: { cpu: "500m", memory: "1Gi" }
+        limits: { cpu: "1", memory: "1Gi" }</code></pre>
+
+      <h4>3. Commands</h4>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it actually does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <code>kubectl patch pod web --subresource resize --patch
+              '{"spec":{"containers":[{"name":"app","resources":{"requests":{"cpu":"2"},"limits":{"cpu":"2"}}}]}}'</code>
+            </td>
+            <td>
+              Requests a new CPU size for container <code>app</code>. Patching
+              resources on the main pod object (without
+              <code>--subresource resize</code>) is rejected.
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <code>kubectl get pod web -o jsonpath='{.status.containerStatuses[0].resources}'</code>
+            </td>
+            <td>Shows the resources actually applied right now.</td>
+          </tr>
+          <tr>
+            <td><code>kubectl describe pod web</code></td>
+            <td>
+              Shows <code>PodResizePending</code> /
+              <code>PodResizeInProgress</code> conditions and their reasons.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="example">
+        <p class="label">Worked example</p>
+        <p>
+          A Java API pod is set to 2 CPU because startup (JIT compilation, cache
+          loading) takes 90s at 0.5 CPU. In steady state it uses 0.3 CPU. 30
+          replicas × 1.5 wasted CPU = 45 CPUs reserved for nothing.
+        </p>
+        <ol>
+          <li>Start pods with <code>cpu: 2</code> – fast startup.</li>
+          <li>
+            Once Ready, an automation (or VPA) resizes CPU to
+            <code>500m</code> in place – <code>NotRequired</code>, so no
+            restart, no dropped connections.
+          </li>
+          <li>
+            The node now has 1.5 CPU free per pod for other workloads; the
+            cluster needs fewer nodes.
+          </li>
+        </ol>
+        <p>
+          Memory is different: the JVM sized its heap from the limit at startup,
+          so it is set to <code>RestartContainer</code> – the container restarts
+          (the pod, its IP and volumes stay) and picks up the new heap size.
+        </p>
+      </div>
+
+      <div class="pitfall">
+        <p class="label">Common pitfalls</p>
+        <ul>
+          <li>
+            Assuming a resize always happens: if the node lacks room it stays
+            Deferred – the pod is <b>not</b> moved to another node.
+          </li>
+          <li>
+            Lowering a memory limit live below what the process already uses –
+            risky (OOM); prefer <code>RestartContainer</code> for memory, or
+            check usage first.
+          </li>
+          <li>
+            The QoS class (<a href="k8s-study-2-networking.html#q21">Q21</a>) is fixed at creation; a resize
+            that would change it (e.g. Guaranteed → Burstable) is rejected.
+          </li>
+          <li>
+            Editing the Deployment template still triggers a normal rolling
+            update – in-place resize applies to existing pods, and the template
+            decides what new pods get.
+          </li>
+        </ul>
+      </div>
+
+      <div class="interview">
+        <p class="label">In the interview</p>
+        <p>
+          "Since 1.35 in-place resize is GA: you patch the pod's resize
+          subresource and the kubelet updates the container's cgroups without
+          recreating the pod. resizePolicy decides per resource whether a
+          container restart is needed – typically CPU live, memory with restart
+          for runtimes that size their heap at startup. If the node can't fit
+          it, the resize is deferred. It enables non-disruptive rightsizing,
+          startup CPU boosts, and VPA's InPlaceOrRecreate mode." Follow-ups:
+          how to see the applied vs desired size; why memory needs care; what
+          happens if the node is full.
+        </p>
+      </div>
+      <p class="ref"><a href="k8s.html#q38">&uarr; Short interview answer</a></p>
+    </section>
+    <p class="pager"><a href="k8s-study-2-networking.html">&larr; Part 2: Networking, Config, Resources, Rollouts</a> · <a href="k8s-study.html">Contents</a> · <a href="k8s-study-4-admin.html">Part 4: Cluster Administration &rarr;</a></p>
+
+    <p class="src">
+      <b>Further reading:</b>
+      <a href="https://kubernetes.io/docs/home/">Kubernetes documentation</a>
+      ·
+      <a href="https://kubernetes.io/docs/reference/kubectl/">kubectl reference</a>
+      ·
+      <a href="https://gateway-api.sigs.k8s.io/">Gateway API</a>
+      ·
+      <a href="https://kubernetes.io/blog/">Kubernetes blog</a>
+    </p>
+  </body>
+</html>
